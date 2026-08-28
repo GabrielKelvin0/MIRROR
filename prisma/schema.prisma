@@ -10,25 +10,513 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Placeholder schema for Phase 1
-// Full schema implementation in Phase 3
+// ============================================================================
+// USER & AUTHENTICATION
+// ============================================================================
 
 model User {
   id String @id @default(cuid())
-  clerkId String @unique
-  email String @unique
-  firstName String?
-  lastName String?
+  clerkId String @unique @db.VarChar(255)
+  email String @unique @db.VarChar(255)
+  firstName String? @db.VarChar(100)
+  lastName String? @db.VarChar(100)
   role UserRole @default(LEARNER)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Relationships
+  creatorProfile CreatorProfile?
+  strategies Strategy[]
+  follows Follow[] @relation("UserFollows")
+  followedBy Follow[] @relation("FollowedBy")
+  portfolios PaperPortfolio[]
+  notifications Notification[]
+  learningProgress Progress[]
+  subscriptions Subscription[]
+  entitlements Entitlement[]
+  reports Report[]
+  auditLogs AuditLog[]
+  moderationActions ModerationAction[]
+
   @@index([clerkId])
   @@index([role])
+  @@index([email])
 }
 
 enum UserRole {
   LEARNER
   CREATOR
   ADMIN
+}
+
+// ============================================================================
+// CREATOR PROFILE
+// ============================================================================
+
+model CreatorProfile {
+  id String @id @default(cuid())
+  userId String @unique
+  bio String? @db.Text
+  investmentPhilosophy String? @db.Text
+  yearsOfExperience Int?
+  isVerified Boolean @default(false)
+  followerCount Int @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relationships
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isVerified])
+}
+
+// ============================================================================
+// STRATEGY
+// ============================================================================
+
+model Strategy {
+  id String @id @default(cuid())
+  creatorId String
+  name String @db.VarChar(255)
+  description String? @db.Text
+  philosophy String? @db.VarChar(255)
+  objective String? @db.Text
+  riskProfile String? @db.VarChar(100) // LOW, MODERATE, HIGH
+  timeHorizon String? @db.VarChar(100) // e.g., "5-10 years"
+  status StrategyStatus @default(DRAFT)
+  thesis String? @db.Text
+  decisionRules String? @db.Text
+  rebalancePolicy String? @db.Text
+  exitConditions String? @db.Text
+  invalidatingConditions String? @db.Text
+  // Simplified demo performance (Phase 14 adds real market data)
+  performanceYTD Float? // Percentage
+  performanceOneYear Float?
+  performanceThreeYear Float?
+  maxDrawdown Float? // Negative percentage
+  volatility Float? // Standard deviation
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  publishedAt DateTime?
+
+  // Relationships
+  creator User @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  allocations StrategyAllocation[]
+  updates StrategyUpdate[]
+  followers Follow[]
+  portfolioStrategies PaperPortfolioStrategy[]
+  positions PaperPosition[]
+  auditLogs AuditLog[]
+
+  @@index([creatorId])
+  @@index([status])
+  @@index([publishedAt])
+  @@index([riskProfile])
+}
+
+enum StrategyStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+// ============================================================================
+// STRATEGY ALLOCATION
+// ============================================================================
+
+model StrategyAllocation {
+  id String @id @default(cuid())
+  strategyId String
+  assetClass String @db.VarChar(100) // e.g., "US Large Cap", "International", "Bonds"
+  targetWeight Float // Percentage (0-100)
+  currentWeight Float? // Percentage (updated during rebalance events)
+  reasoning String? @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relationships
+  strategy Strategy @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+
+  @@index([strategyId])
+  @@unique([strategyId, assetClass])
+}
+
+// ============================================================================
+// STRATEGY UPDATE
+// ============================================================================
+
+model StrategyUpdate {
+  id String @id @default(cuid())
+  strategyId String
+  title String @db.VarChar(255)
+  description String @db.Text
+  changesSummary String? @db.Text // e.g., "Reduced technology exposure from 25% to 15%"
+  reasoning String? @db.Text // Why the change was made
+  riskAssessment String? @db.Text // Impact of the change
+  effectiveDate DateTime
+  createdAt DateTime @default(now())
+
+  // Relationships
+  strategy Strategy @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+  notifications Notification[] @relation("UpdateNotifications")
+
+  @@index([strategyId])
+  @@index([effectiveDate])
+}
+
+// ============================================================================
+// FOLLOW
+// ============================================================================
+
+model Follow {
+  id String @id @default(cuid())
+  userId String
+  strategyId String
+  createdAt DateTime @default(now())
+
+  // Relationships
+  user User @relation("UserFollows", fields: [userId], references: [id], onDelete: Cascade)
+  strategy Strategy @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, strategyId])
+  @@index([userId])
+  @@index([strategyId])
+}
+
+// ============================================================================
+// PAPER PORTFOLIO
+// ============================================================================
+
+model PaperPortfolio {
+  id String @id @default(cuid())
+  userId String
+  name String @db.VarChar(255)
+  description String? @db.Text
+  startingCapital Float // USD
+  currentValue Float // Calculated from positions
+  cashBalance Float // Remaining uninvested cash
+  status PortfolioStatus @default(ACTIVE)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relationships
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  strategies PaperPortfolioStrategy[]
+  positions PaperPosition[]
+  events PortfolioEvent[]
+
+  @@index([userId])
+  @@index([status])
+}
+
+enum PortfolioStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+model PaperPortfolioStrategy {
+  id String @id @default(cuid())
+  portfolioId String
+  strategyId String
+  allocationPercentage Float // What % of portfolio follows this strategy
+  createdAt DateTime @default(now())
+
+  // Relationships
+  portfolio PaperPortfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+  strategy Strategy @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+
+  @@unique([portfolioId, strategyId])
+  @@index([portfolioId])
+  @@index([strategyId])
+}
+
+// ============================================================================
+// PAPER POSITION
+// ============================================================================
+
+model PaperPosition {
+  id String @id @default(cuid())
+  portfolioId String
+  strategyId String? // Null if manually added
+  symbol String @db.VarChar(20)
+  quantity Float
+  entryPrice Float
+  currentPrice Float? // Updated periodically (Phase 14)
+  currentValue Float? // quantity * currentPrice
+  percentOfPortfolio Float? // Calculated
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relationships
+  portfolio PaperPortfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+  strategy Strategy? @relation(fields: [strategyId], references: [id], onDelete: SetNull)
+  events PortfolioEvent[]
+
+  @@index([portfolioId])
+  @@index([strategyId])
+}
+
+// ============================================================================
+// PORTFOLIO EVENT
+// ============================================================================
+
+model PortfolioEvent {
+  id String @id @default(cuid())
+  portfolioId String
+  positionId String?
+  eventType PortfolioEventType
+  description String @db.Text
+  quantity Float?
+  price Float?
+  totalValue Float?
+  createdAt DateTime @default(now())
+
+  // Relationships
+  portfolio PaperPortfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+  position PaperPosition? @relation(fields: [positionId], references: [id], onDelete: SetNull)
+
+  @@index([portfolioId])
+  @@index([eventType])
+}
+
+enum PortfolioEventType {
+  POSITION_ADDED
+  POSITION_UPDATED
+  POSITION_CLOSED
+  REBALANCE
+  PERFORMANCE_UPDATE
+  STRATEGY_ADDED
+  STRATEGY_REMOVED
+}
+
+// ============================================================================
+// LEARNING & ACADEMY
+// ============================================================================
+
+model Course {
+  id String @id @default(cuid())
+  slug String @unique @db.VarChar(100)
+  title String @db.VarChar(255)
+  description String? @db.Text
+  level CourseLevel
+  order Int @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relationships
+  lessons Lesson[]
+
+  @@index([level])
+}
+
+enum CourseLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+model Lesson {
+  id String @id @default(cuid())
+  courseId String
+  slug String @db.VarChar(100)
+  title String @db.VarChar(255)
+  content String @db.Text // Markdown content
+  order Int @default(0)
+  estimatedMinutes Int? // How long to complete
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relationships
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  progress Progress[]
+
+  @@index([courseId])
+  @@unique([courseId, slug])
+}
+
+model Progress {
+  id String @id @default(cuid())
+  userId String
+  lessonId String
+  completed Boolean @default(false)
+  completedAt DateTime?
+  createdAt DateTime @default(now())
+
+  // Relationships
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId])
+  @@index([userId])
+  @@index([completed])
+}
+
+// ============================================================================
+// NOTIFICATIONS
+// ============================================================================
+
+model Notification {
+  id String @id @default(cuid())
+  userId String
+  type NotificationType
+  title String @db.VarChar(255)
+  message String @db.Text
+  strategyUpdateId String?
+  read Boolean @default(false)
+  readAt DateTime?
+  createdAt DateTime @default(now())
+
+  // Relationships
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  strategyUpdate StrategyUpdate? @relation("UpdateNotifications", fields: [strategyUpdateId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([read])
+  @@index([type])
+}
+
+enum NotificationType {
+  STRATEGY_UPDATE
+  LEARNING_MILESTONE
+  ACCOUNT_UPDATE
+  SYSTEM
+}
+
+// ============================================================================
+// SUBSCRIPTIONS & ENTITLEMENTS
+// ============================================================================
+
+model Subscription {
+  id String @id @default(cuid())
+  userId String
+  plan SubscriptionPlan @default(FREE)
+  status SubscriptionStatus @default(ACTIVE)
+  stripeSubscriptionId String? @db.VarChar(255) // External reference
+  currentPeriodStart DateTime?
+  currentPeriodEnd DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relationships
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  entitlements Entitlement[]
+
+  @@unique([userId])
+  @@index([status])
+}
+
+enum SubscriptionPlan {
+  FREE
+  PRO_LEARNER
+  PREMIUM_CREATOR
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELLED
+  SUSPENDED
+  EXPIRED
+}
+
+model Entitlement {
+  id String @id @default(cuid())
+  subscriptionId String
+  feature String @db.VarChar(100) // e.g., "premium_strategies", "unlimited_portfolios"
+  grantedAt DateTime @default(now())
+  expiresAt DateTime?
+
+  // Relationships
+  subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@unique([subscriptionId, feature])
+  @@index([subscriptionId])
+}
+
+// ============================================================================
+// MODERATION & REPORTING
+// ============================================================================
+
+model Report {
+  id String @id @default(cuid())
+  reporterId String
+  resourceType ResourceType
+  resourceId String
+  reason String @db.VarChar(255)
+  description String? @db.Text
+  status ReportStatus @default(OPEN)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relationships
+  reporter User @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+  moderationActions ModerationAction[]
+
+  @@index([status])
+  @@index([resourceType])
+}
+
+enum ResourceType {
+  STRATEGY
+  USER
+  COMMENT
+}
+
+enum ReportStatus {
+  OPEN
+  INVESTIGATING
+  RESOLVED
+  DISMISSED
+}
+
+model ModerationAction {
+  id String @id @default(cuid())
+  adminId String
+  reportId String?
+  resourceType ResourceType
+  resourceId String
+  action ModerationActionType
+  reason String? @db.Text
+  createdAt DateTime @default(now())
+
+  // Relationships
+  admin User @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  report Report? @relation(fields: [reportId], references: [id], onDelete: SetNull)
+
+  @@index([adminId])
+  @@index([reportId])
+  @@index([action])
+}
+
+enum ModerationActionType {
+  WARN
+  SUSPEND
+  BAN
+  DELETE
+  RESTORE
+}
+
+// ============================================================================
+// AUDIT LOGGING
+// ============================================================================
+
+model AuditLog {
+  id String @id @default(cuid())
+  userId String
+  action String @db.VarChar(100)
+  resourceType String? @db.VarChar(50)
+  resourceId String?
+  changes String? @db.Text // JSON diff
+  ipAddress String? @db.VarChar(45)
+  userAgent String? @db.Text
+  createdAt DateTime @default(now())
+
+  // Relationships
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  strategy Strategy? @relation(fields: [resourceId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([action])
+  @@index([resourceType])
+  @@index([createdAt])
 }

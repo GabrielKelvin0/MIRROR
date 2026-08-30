@@ -556,3 +556,33 @@ enforcement, input/decision validation; unit-tested in
 every read/mutation verifies ownership before touching data. Manual decisions
 are stored as `REBALANCE` portfolio events (the schema's closest existing
 event type) with the decision text in the description.
+
+**Phase 10:** Academy — implemented (DB-backed progress, like Phase 9; requires
+migrations + a live PostgreSQL, not available in this container, so runtime was
+not executed here; verification relied on typecheck, unit tests, and lint).
+Learners follow structured learning paths organized into three levels — Beginner
+(investing basics, stocks vs ETFs, diversification, risk, compound growth,
+portfolio construction), Intermediate (fundamental analysis, valuation, financial
+ratios, DCF concepts, research), and Advanced (macro analysis, factor investing,
+scenario analysis, risk management, portfolio optimization). Each course has
+ordered lessons with typed content blocks; learners mark lessons complete and
+track per-course and per-level progress. All content is educational and clearly
+not personalized advice nor a guarantee of any outcome.
+
+The curriculum itself lives in `lib/data/curriculum.ts` as typed sample data
+(16 courses, ~48 lessons, content as a `ContentBlock` union rendered directly as
+React) shaped to mirror the Prisma `Course`/`Lesson` models so it can be swapped
+for DB records without a redesign. Pure, deterministic rules (progress math,
+completion-state resolution, input validation, lesson navigation) live in
+`lib/services/academy-rules.ts` (unit-tested in `academy-rules.test.ts`).
+Persistence with per-user scoping lives in `lib/db/repositories/
+academy-repository.ts`; server actions are in `app/(learner)/academy/actions.ts`;
+learner UI is under `/learner/academy` (catalog, course detail with progress bar,
+lesson content with complete/incomplete toggle and prev/next navigation) plus a
+client `LessonCompleteButton`. Progress rows are scoped to the authenticated user.
+
+KNOWN LIMITATION — schema FK: `Progress.lessonId` is a foreign key to
+`Lesson.id` (a cuid), but the Academy curriculum is sample data with no real
+`Lesson` rows yet, so progress stores the deterministic `"courseSlug/lessonSlug"`
+key in `lessonId`. When a later phase seeds real `Course`/`Lesson` rows, progress
+must be reconciled to real lesson ids so the FK resolves.

@@ -21,12 +21,15 @@ export default function LearnerDashboard() {
           </p>
         </div>
 
-        <div className="border border-neutral-200 rounded-lg p-6 bg-white">
+        <a
+          href="/learner/academy"
+          className="block border border-neutral-200 rounded-lg p-6 bg-white hover:border-emerald-300 transition"
+        >
           <h2 className="font-semibold text-neutral-900">Learning Progress</h2>
           <p className="text-neutral-600 text-sm mt-2">
-            Academy progress will appear here (Phase 13)
+            Work through Academy lessons and track your progress
           </p>
-        </div>
+        </a>
 
         <div className="border border-neutral-200 rounded-lg p-6 bg-white">
           <h2 className="font-semibold text-neutral-900">Notifications</h2>

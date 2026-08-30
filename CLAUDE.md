@@ -257,6 +257,23 @@ npm run format
   strategies and the total is capped at 100%. Manual decisions are stored as
   REBALANCE portfolio events (the closest existing event type), not a
   fabricated enum.
+- Phase 10 (Academy) is a hybrid: the curriculum is typed sample data in
+  lib/data/curriculum.ts (16 courses across Beginner/Intermediate/Advanced,
+  ~48 lessons, content as a `ContentBlock` union rendered as React, shaped to
+  mirror the Prisma `Course`/`Lesson` models so it can be swapped for DB
+  records without a redesign), and progress is DB-backed (Prisma `Progress`, +
+  `Course`/`Lesson`/`CourseLevel` models from Phase 3). It compiles, typechecks,
+  and is unit-tested, but was NOT runtime-executed here (no DB). Pure
+  deterministic rules live in lib/services/academy-rules.ts (unit-tested in
+  academy-rules.test.ts); per-user persistence in
+  lib/db/repositories/academy-repository.ts; actions in
+  app/(learner)/academy/actions.ts; learner UI under /learner/academy (catalog,
+  course detail with progress bar, lesson content + complete toggle + prev/next).
+  Content is educational only — never personalized advice nor a guarantee.
+  KNOWN LIMITATION (schema FK): `Progress.lessonId` is an FK to `Lesson.id`, but
+  the sample curriculum has no real `Lesson` rows, so progress stores
+  "courseSlug/lessonSlug" in `lessonId`; a later phase must seed real
+  `Course`/`Lesson` rows (or reconcile progress) so the FK resolves.
 
 ## Security Boundaries (implemented)
 

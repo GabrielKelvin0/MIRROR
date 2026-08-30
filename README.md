@@ -147,7 +147,8 @@ MIRROR is built in phases. Current status:
 - ✅ **Phase 7:** Strategy Discovery (search, filters, risk-forward cards, blueprint detail with creator/performance/updates)
 - ✅ **Phase 8:** Following and Notifications (follow/unfollow, read/unread updates, safe notification payloads, anti-spam)
 - ✅ **Phase 9:** Paper Portfolio (hypothetical virtual portfolios with simulated capital, strategy allocations, manual decisions, and deterministic performance vs a sample benchmark)
-- ⏳ **Phase 10+:** Feature implementation
+- ⏳ **Phase 10:** Academy (structured learning paths, courses, lessons, completion progress) — implemented, DB-backed progress pending runtime verification
+- ⏳ **Phase 11+:** Feature implementation
 
 Phase work is tracked in MIRROR_MASTER_PROMPT.md (Phases 0–17); product
 requirements are sourced from MIRROR_SPEC.md.

@@ -145,7 +145,8 @@ MIRROR is built in phases. Current status:
 - ✅ **Phase 5:** Marketing website (public pages, strategy blueprints)
 - ✅ **Phase 6:** Strategy Creator workflow (draft, edit, allocations, updates, publish/archive)
 - ✅ **Phase 7:** Strategy Discovery (search, filters, risk-forward cards, blueprint detail with creator/performance/updates)
-- ⏳ **Phase 8+:** Feature implementation
+- ✅ **Phase 8:** Following and Notifications (follow/unfollow, read/unread updates, safe notification payloads, anti-spam)
+- ⏳ **Phase 9+:** Feature implementation
 
 Phase work is tracked in MIRROR_MASTER_PROMPT.md (Phases 0–17); product
 requirements are sourced from MIRROR_SPEC.md.

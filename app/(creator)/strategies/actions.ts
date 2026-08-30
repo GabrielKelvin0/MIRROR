@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/auth/session";
 import { strategyRepository } from "@/lib/db";
+import { followRepository } from "@/lib/db/repositories/follow-repository";
 import { ensureCreatorProfile } from "@/lib/db/repositories/strategy-repository";
 import type { StrategyStatus } from "@prisma/client";
 
@@ -139,7 +140,15 @@ export function addUpdate(
       if (effectiveDateInput) {
         payload.effectiveDate = new Date(effectiveDateInput);
       }
-      await strategyRepository.addUpdate(strategyId, creatorId, payload);
+      const update = await strategyRepository.addUpdate(strategyId, creatorId, payload);
+      // Fan out notifications to followers only when the update is "meaningful"
+      // (published strategy with non-empty title/description). The anti-spam
+      // gate lives in the repository, so drafts/archived/blank updates never spam.
+      await followRepository.notifyFollowersOfUpdate(update.strategyId, {
+        id: update.id,
+        title: update.title,
+        description: update.description,
+      });
       revalidatePath(`/creator/dashboard/strategies/${strategyId}/edit`);
       return { error: undefined };
     } catch (err) {

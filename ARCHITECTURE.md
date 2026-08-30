@@ -521,3 +521,16 @@ performance/drawdown/volatility, methodology, update history, and disclosures.
 Discovery logic lives in `lib/data/strategies.ts` and is covered by unit tests
 in `lib/data/strategies.test.ts`. Risk and methodology are always surfaced;
 strategies are never ranked by return alone.
+
+**Phase 8:** Following and Notifications — implemented (DB-backed, like
+Phase 6). Learners follow/unfollow published strategies; when a followed
+strategy publishes a "meaningful" update (published strategy with non-empty
+title/description), a notification is fanned out to its followers. Pure,
+anti-spam rules live in `lib/services/following-rules.ts` (unit-tested in
+`following-rules.test.ts`); persistence lives in `lib/db/repositories/`
+(`follow-repository.ts`, `notification-repository.ts`); server actions are in
+`app/(learner)/following/actions.ts`; learner UI is under `/learner/following`
+and `/learner/notifications` with read/unread state and appropriate loading,
+error, and empty states. Notification payloads are safe (display-only title +
+message; no emails or other sensitive data), and notifications are only ever
+scoped to the authenticated user's own rows.

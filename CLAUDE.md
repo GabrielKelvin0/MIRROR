@@ -233,6 +233,17 @@ npm run format
   risk and methodology always visible. Strategies must never be ranked by
   return alone; the default sort is by risk. Discovery logic and its unit tests
   live in lib/data/strategies.ts and lib/data/strategies.test.ts.
+- Phase 8 (Following and Notifications) is DB-backed (Prisma `Follow` and
+  `Notification` models). It compiles, typechecks, and is unit-tested, but was
+  NOT runtime-executed here (no DB). Pure rules live in
+  lib/services/following-rules.ts (unit-tested in following-rules.test.ts);
+  persistence in lib/db/repositories/{follow,notification}-repository.ts;
+  actions in app/(learner)/following/actions.ts; learner UI under
+  /learner/following and /learner/notifications. Following applies to
+  DB-backed PUBLISHED strategies (Phase 6 creator strategies), not the Phase 5/7
+  sample-data marketing pages. Notifications fan out to followers only for
+  "meaningful" updates (published strategy + non-empty title/description) to
+  avoid spam; payloads are safe (display-only).
 
 ## Security Boundaries (implemented)
 

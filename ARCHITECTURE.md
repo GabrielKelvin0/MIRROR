@@ -18,23 +18,32 @@ MIRROR is a layered, service-oriented application built on Next.js. The architec
 
 ### 1. Public Website
 
-**Route:** `/` (public, no authentication required)
+**Routes:** public, no authentication required
+- `/` — marketing homepage
+- `/strategies` — strategy blueprint discovery
+- `/strategies/[slug]` — individual strategy blueprint
+- `/how-it-works` — methodology and FAQ
+- `/about` — mission, principles, financial-safety boundary
 
 **Purpose:** Marketing, product education, conversion to signup
 
-**Sections:**
+**Implemented sections (Phase 5):**
 - Homepage hero with core message
-- Why MIRROR section
-- How it works (4-step process)
-- Featured strategies (demo data, clearly labeled)
-- Research preview
-- Paper portfolio demo
-- Academy overview
-- Creator section
-- Pricing
-- Footer with disclosures
+- Why MIRROR (three pillars: Methodology, Transparency, Education)
+- Transparent strategy blueprint preview (sample strategies, labeled)
+- Investment principles
+- Decision-history transparency
+- What MIRROR is / is not (guardrails)
+- CTA and footer with disclosures
 
-**Components:** Marketing pages, no data access, no user identity
+**Planned (future phases, not yet built):** pricing, go-to-market, creator
+sections, academy overview, paper-portfolio demo.
+
+**Components:** `components/marketing/` (Navbar, Footer, Hero, SectionHeading,
+StrategyCard, StrategyBlueprint, MethodologyFlow, CTA). No DB access, no user
+identity. Content is driven by typed sample data in `lib/data/strategies.ts`,
+which is intentionally shaped like future Prisma-backed records so it can be
+swapped later without a redesign.
 
 **Verification:** No authenticated user required
 
@@ -483,4 +492,7 @@ export class ValidationError extends AppError {
 
 **Phase 4 / 4.5:** Authentication, authorization, and stabilization — implemented
 
-**Phase 5:** Build the marketing website (not started)
+**Phase 5:** Marketing website — implemented (public pages + strategy blueprints;
+see the Public Website boundary above. `next build` still fails with SIGBUS in
+this aarch64 container; verification relies on `npm run typecheck`, `npm test`,
+and `npm run lint`.)

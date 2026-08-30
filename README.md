@@ -52,15 +52,18 @@ MIRROR focuses on methodology, education, and independent thinking rather than b
 MIRROR/
 ├── app/               # Next.js app directory
 │   ├── (auth)/       # Auth routes (sign-in, sign-up)
-│   ├── (public)/     # Public pages (homepage, strategies)
+│   ├── (public)/     # Public marketing pages (home, strategies, about, etc.)
 │   ├── (learner)/    # Learner dashboard (protected)
 │   ├── (creator)/    # Creator dashboard (protected)
 │   ├── (admin)/      # Admin dashboard (protected)
 │   ├── api/          # API routes
-│   ├── layout.tsx    # Root layout
-│   └── page.tsx      # Homepage
-├── components/        # Reusable components (UI, features, layout)
-├── lib/              # Utilities, services, database access
+│   └── layout.tsx    # Root layout (ClerkProvider + html/body)
+├── components/
+│   └── marketing/    # Reusable marketing website components (Navbar, Hero, etc.)
+├── lib/
+│   ├── data/         # Typed sample/source-of-truth data (e.g. strategies.ts)
+│   ├── services/     # Business logic services
+│   └── ...           # Utilities, database access, auth helpers
 ├── prisma/           # Database schema and migrations
 ├── public/           # Static assets
 ├── MIRROR_SPEC.md    # Product specification
@@ -138,7 +141,7 @@ MIRROR is built in phases. Current status:
 - ✅ **Phase 2:** Architecture and services
 - ✅ **Phase 3:** Database schema (validated; migrations pending)
 - ✅ **Phase 4 / 4.5:** Authentication, authorization, and stabilization
-- ⏳ **Phase 5:** Marketing website
+- ✅ **Phase 5:** Marketing website (public pages, strategy blueprints)
 - ⏳ **Phase 6+:** Feature implementation
 
 Phase requirements were historically tracked in MIRROR_CODEX_PROMPT.md, which

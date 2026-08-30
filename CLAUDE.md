@@ -208,13 +208,20 @@ npm run format
 
 ---
 
-## Known Limitations (Phase 4.5)
+## Known Limitations
 
+- `npm run build` and `next build` fail with a Bus error (`SIGBUS`, exit 135) on
+  this aarch64 container — an environment limitation, not a code error. Use
+  `npm run typecheck`, `npm test`, and `npx eslint` for verification.
 - Clerk configuration requires environment variables (NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY, CLERK_SECRET_KEY)
 - Database requires PostgreSQL running locally or remote connection string
 - No database migrations applied yet (schema validated, migration and application pending)
 - Role provisioning (assigning CREATOR/ADMIN to existing users) is not yet implemented as a user-facing capability; new users default to LEARNER
 - Local identity is keyed by `clerkId` (the authenticated Clerk subject); see lib/db/repositories/user-repository.ts
+- The public marketing website (Phase 5) is driven by typed sample data in
+  lib/data/strategies.ts. These are educational models, never live products or
+  guarantees; they are shaped like future Prisma-backed records to be swapped
+  without redesign.
 
 ## Security Boundaries (implemented)
 

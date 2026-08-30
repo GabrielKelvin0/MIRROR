@@ -64,8 +64,7 @@ MIRROR/
 ├── prisma/           # Database schema and migrations
 ├── public/           # Static assets
 ├── MIRROR_SPEC.md    # Product specification
-├── MIRROR_UI_UX.md   # Design system
-├── MIRROR_CODEX_PROMPT.md # Build phases
+├── ARCHITECTURE.md   # Application architecture
 ├── CLAUDE.md         # Engineering rules
 ├── package.json      # Dependencies
 ├── tsconfig.json     # TypeScript config
@@ -142,7 +141,9 @@ MIRROR is built in phases. Current status:
 - ⏳ **Phase 5:** Marketing website
 - ⏳ **Phase 6+:** Feature implementation
 
-See MIRROR_CODEX_PROMPT.md for detailed phase requirements.
+Phase requirements were historically tracked in MIRROR_CODEX_PROMPT.md, which
+is not currently present in this repository; requirements are sourced from
+MIRROR_SPEC.md.
 
 ## Product Vision
 
@@ -178,9 +179,13 @@ Real-money features require separate legal and compliance review before implemen
 ## Documentation
 
 - **MIRROR_SPEC.md** — Complete product specification
-- **MIRROR_UI_UX.md** — Design system and UI/UX guidelines
-- **MIRROR_CODEX_PROMPT.md** — Build phases and implementation guide
+- **ARCHITECTURE.md** — Application architecture and boundaries
 - **CLAUDE.md** — Engineering rules and standards
+
+> Note: MIRROR_CODEX_PROMPT.md (build phases) and MIRROR_UI_UX.md (design
+> system) are referenced by earlier phases in this documentation but are not
+> currently present in the repository. They have not been recreated; use
+> MIRROR_SPEC.md and ARCHITECTURE.md as the authoritative sources.
 
 ## Contributing
 
@@ -198,11 +203,13 @@ See CLAUDE.md for security guidelines.
 
 ## Performance
 
-Performance is measured, not speculated. See Phase 20 (Performance) in MIRROR_CODEX_PROMPT.md.
+Performance is measured, not speculated. Performance work is scheduled for a
+later phase.
 
 ## Accessibility
 
-MIRROR is built for everyone. See MIRROR_UI_UX.md and Phase 19 (Accessibility) for requirements.
+MIRROR is built for everyone. Accessibility requirements are scheduled for a
+later phase.
 
 ## License
 

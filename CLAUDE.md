@@ -7,9 +7,14 @@ This document defines the engineering principles and guidelines for MIRROR devel
 ### 1. Source of Truth First
 
 - Read MIRROR_SPEC.md before implementing features.
-- Read MIRROR_UI_UX.md for design direction.
-- Read MIRROR_CODEX_PROMPT.md for phase requirements.
+- Read ARCHITECTURE.md for application architecture and boundaries.
+- For engineering standards, follow this document.
 - Respect existing architecture unless explicitly conflicting with spec.
+
+> Note: MIRROR_CODEX_PROMPT.md (phase requirements) and MIRROR_UI_UX.md
+> (design direction) are referenced by earlier phases but are not currently
+> present in this repository. They have not been recreated or fabricated;
+> use MIRROR_SPEC.md and ARCHITECTURE.md as the authoritative sources.
 
 ### 2. Change Discipline
 

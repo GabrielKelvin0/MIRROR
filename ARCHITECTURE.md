@@ -115,16 +115,22 @@ application depends on the auth/session/roles boundary, not on Clerk directly.
 
 **Purpose:** Strategy creation, publishing, management
 
-**Features:**
-- Strategy CRUD (Create, Read, Update, Delete)
-- Strategy publishing workflow (draft → published)
-- Strategy updates publication
-- Creator profile management
-- Strategy analytics
-- Follower management
-- Research upload
+**Implemented (Phase 6):**
+- Strategy creation (draft) and editing
+- Blueprint fields: philosophy, objective, time horizon, risk description,
+  target allocation, thesis, decision rules, rebalance policy, exit /
+  invalidating conditions
+- Target allocation management (asset class, weight, reasoning; 100% cap)
+- Strategy updates with rationale
+- Owner-gated preview, publish, and archive (draft → published → archived)
+- Ownership enforced at the data boundary (strategy-repository); unpublished
+  content is never exposed via public reads
 
-**Authorization:** Must be authenticated with CREATOR role
+**Planned (future phases, not yet built):** strategy analytics, follower
+management, research upload, creator profile management UI.
+
+**Authorization:** Must be authenticated with CREATOR role; ownership of each
+strategy is verified server-side (never client-supplied identity)
 
 **Database Access:** Full access to own strategies, read-only access to public data
 
@@ -496,3 +502,9 @@ export class ValidationError extends AppError {
 see the Public Website boundary above. `next build` still fails with SIGBUS in
 this aarch64 container; verification relies on `npm run typecheck`, `npm test`,
 and `npm run lint`.)
+
+**Phase 6:** Strategy Creator workflow — implemented (draft, edit, allocations,
+updates, owner-gated preview/publish/archive; see the Creator Application
+boundary above). DB-backed: requires migrations + a live PostgreSQL, which are
+not available in this container (missing OpenSSL and `DATABASE_URL`), so runtime
+was not executed here; verification relied on typecheck, unit tests, and lint.

@@ -143,7 +143,8 @@ MIRROR is built in phases. Current status:
 - ✅ **Phase 3:** Database schema (validated; migrations pending)
 - ✅ **Phase 4 / 4.5:** Authentication, authorization, and stabilization
 - ✅ **Phase 5:** Marketing website (public pages, strategy blueprints)
-- ⏳ **Phase 6+:** Feature implementation
+- ✅ **Phase 6:** Strategy Creator workflow (draft, edit, allocations, updates, publish/archive)
+- ⏳ **Phase 7+:** Feature implementation
 
 Phase work is tracked in MIRROR_MASTER_PROMPT.md (Phases 0–17); product
 requirements are sourced from MIRROR_SPEC.md.

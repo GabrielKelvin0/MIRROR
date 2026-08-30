@@ -11,4 +11,14 @@ const compat = new FlatCompat({
 
 export default [
   ...compat.extends("next/core-web-vitals", "next/typescript"),
+  {
+    rules: {
+      // Allow underscored function params (e.g. unused action params in
+      // useActionState signatures), matching tsconfig `noUnusedParameters`.
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
+      ],
+    },
+  },
 ];

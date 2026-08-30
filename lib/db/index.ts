@@ -5,3 +5,4 @@ export { userRepository } from "./repositories/user-repository";
 export { strategyRepository } from "./repositories/strategy-repository";
 export { followRepository } from "./repositories/follow-repository";
 export { notificationRepository } from "./repositories/notification-repository";
+export { portfolioRepository } from "./repositories/portfolio-repository";

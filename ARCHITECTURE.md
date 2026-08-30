@@ -534,3 +534,25 @@ and `/learner/notifications` with read/unread state and appropriate loading,
 error, and empty states. Notification payloads are safe (display-only title +
 message; no emails or other sensitive data), and notifications are only ever
 scoped to the authenticated user's own rows.
+
+**Phase 9:** Paper Portfolio — implemented (DB-backed, like Phase 6/8;
+requires migrations + a live PostgreSQL, not available in this container, so
+runtime was not executed here; verification relied on typecheck, unit tests,
+and lint). Learners create purely hypothetical virtual portfolios with
+simulated starting capital, allocate PUBLISHED strategies (with the total
+capped at 100%), record manual decisions, and view deterministic performance
+plus an illustrative sample benchmark. All figures are clearly labelled
+hypothetical — there is no real money, execution, or brokerage anywhere.
+
+Pure, deterministic math and validation live in
+`lib/services/portfolio-rules.ts` (valuation, return, allocation-total
+enforcement, input/decision validation; unit-tested in
+`portfolio-rules.test.ts`). Persistence with ownership-at-the-boundary lives in
+`lib/db/repositories/portfolio-repository.ts`; server actions are in
+`app/(learner)/portfolio/actions.ts`; learner UI is under `/learner/portfolio`
+(list + detail) with client components in `components/learner/`
+(`PortfolioCreateForm`, `PortfolioAllocationManager`, `PortfolioDecisionForm`,
+`PortfolioDeleteButton`). Portfolio rows are scoped to the authenticated user;
+every read/mutation verifies ownership before touching data. Manual decisions
+are stored as `REBALANCE` portfolio events (the schema's closest existing
+event type) with the decision text in the description.

@@ -244,6 +244,19 @@ npm run format
   sample-data marketing pages. Notifications fan out to followers only for
   "meaningful" updates (published strategy + non-empty title/description) to
   avoid spam; payloads are safe (display-only).
+- Phase 9 (Paper Portfolio) is DB-backed (Prisma `PaperPortfolio`,
+  `PaperPortfolioStrategy`, `PaperPosition`, `PortfolioEvent` models). It
+  compiles, typechecks, and is unit-tested, but was NOT runtime-executed here
+  (no DB). Pure deterministic valuation/allocation/decision rules live in
+  lib/services/portfolio-rules.ts (unit-tested in portfolio-rules.test.ts);
+  ownership-checked persistence in
+  lib/db/repositories/portfolio-repository.ts; actions in
+  app/(learner)/portfolio/actions.ts; learner UI under /learner/portfolio.
+  Everything is clearly hypothetical (simulated capital + illustrative model
+  returns; no real money or execution). Allocations target DB-backed PUBLISHED
+  strategies and the total is capped at 100%. Manual decisions are stored as
+  REBALANCE portfolio events (the closest existing event type), not a
+  fabricated enum.
 
 ## Security Boundaries (implemented)
 

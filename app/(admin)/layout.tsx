@@ -1,16 +1,33 @@
-/**
- * Admin layout with protected access.
- *
- * This layout wraps all admin routes (/admin/*).
- * Actual authentication verification happens at the server level.
- */
-
 import { ReactNode } from "react";
+import { SignOutButton } from "@clerk/nextjs";
+import { requireRole } from "@/lib/auth/session";
 
-export default function AdminLayout({ children }: { children: ReactNode }) {
+/**
+ * Admin layout.
+ *
+ * Server-side authorization: requires an authenticated Clerk session
+ * whose local MIRROR User has the ADMIN role. Unauthorized users are
+ * redirected by requireRole. This is the security boundary; never rely
+ * on client-side guards.
+ */
+export default async function AdminLayout({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  await requireRole("ADMIN");
   return (
     <div className="min-h-screen bg-neutral-50">
-      {/* Admin-specific header/navigation will go here */}
+      <header className="border-b border-neutral-200 bg-white">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+          <span className="font-semibold text-neutral-900">MIRROR Admin</span>
+          <SignOutButton>
+            <button className="text-sm text-neutral-600 hover:text-neutral-900">
+              Sign out
+            </button>
+          </SignOutButton>
+        </div>
+      </header>
       <main>{children}</main>
     </div>
   );

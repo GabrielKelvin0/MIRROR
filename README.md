@@ -43,7 +43,7 @@ MIRROR focuses on methodology, education, and independent thinking rather than b
 - **Frontend:** Next.js 15 + TypeScript
 - **Styling:** Tailwind CSS + shadcn/ui (ready for Phase 6)
 - **Authentication:** Clerk (replaceable)
-- **Database:** PostgreSQL + Prisma ORM (schema in Phase 3)
+- **Database:** PostgreSQL + Prisma ORM (schema validated)
 - **Deployment:** Vercel-ready
 
 ## Project Structure
@@ -100,6 +100,13 @@ cp .env.example .env.local
 # - DATABASE_URL
 ```
 
+Prisma validation/generation (no database connection required):
+
+```bash
+npx prisma validate   # validates the schema
+npx prisma generate   # generates the Prisma client
+```
+
 ### Development
 
 ```bash
@@ -111,6 +118,9 @@ npm run typecheck
 
 # Run linting
 npm run lint
+
+# Run tests
+npm test
 
 # Format code
 npm run format
@@ -125,10 +135,10 @@ npm start
 MIRROR is built in phases. Current status:
 
 - ✅ **Phase 0:** Inspection and planning
-- ✅ **Phase 1:** Foundation (this phase)
-- 🔄 **Phase 2:** Architecture and services
-- ⏳ **Phase 3:** Database schema
-- ⏳ **Phase 4:** Authentication and authorization
+- ✅ **Phase 1:** Foundation
+- ✅ **Phase 2:** Architecture and services
+- ✅ **Phase 3:** Database schema (validated; migrations pending)
+- ✅ **Phase 4 / 4.5:** Authentication, authorization, and stabilization
 - ⏳ **Phase 5:** Marketing website
 - ⏳ **Phase 6+:** Feature implementation
 
@@ -200,6 +210,10 @@ TBD
 
 ## Status
 
-**Phase 1 — Foundation: COMPLETE**
+**Phase 4.5 — Stabilization & Reconciliation: COMPLETE**
 
-Next: Phase 2 — Architecture
+Clerk authentication is active, `/learner/*`, `/creator/*`, and `/admin/*` are
+protected by middleware and server-side role authorization, and new users
+default to LEARNER.
+
+Next: Phase 5 — Marketing website (not started)

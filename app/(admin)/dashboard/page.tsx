@@ -3,7 +3,7 @@ export default function AdminDashboard() {
     <div className="space-y-8 p-8">
       <div>
         <h1 className="text-3xl font-bold text-neutral-900">Admin Dashboard</h1>
-        <p className="text-neutral-600 mt-2">Phase 4 — Authentication Placeholder</p>
+        <p className="text-neutral-600 mt-2">Admin area — features arrive in later phases</p>
       </div>
 
       <div className="grid md:grid-cols-2 gap-8">

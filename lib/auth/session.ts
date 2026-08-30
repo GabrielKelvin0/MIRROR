@@ -1,13 +1,18 @@
-import { auth } from "@clerk/nextjs/server";
+import "server-only";
+import { auth, currentUser } from "@clerk/nextjs/server";
+import type { UserRole } from "@prisma/client";
 import { redirect } from "next/navigation";
+import { userRepository } from "@/lib/db";
+import { assertRole } from "@/lib/auth/roles";
+
+type ClerkSession = ReturnType<typeof auth>;
 
 /**
- * Get the current authenticated user session.
+ * Get the current authenticated Clerk session.
  *
- * Throws if user is not authenticated.
- * Returns the Clerk session with userId.
+ * Redirects unauthenticated users to /sign-in.
  */
-export async function requireAuth() {
+export async function requireAuth(): Promise<Awaited<ClerkSession>> {
   const session = await auth();
   if (!session?.userId) {
     redirect("/sign-in");
@@ -16,32 +21,58 @@ export async function requireAuth() {
 }
 
 /**
- * Get the current user session, or null if not authenticated.
+ * Get the current Clerk session (or an unauthenticated one), without
+ * redirecting. Public, non-redirecting variant for optional-auth call sites.
  */
-export async function getOptionalAuth() {
+export async function getOptionalAuth(): Promise<Awaited<ClerkSession>> {
   return await auth();
 }
 
 /**
- * Verify user has a specific role.
+ * Resolve (create or retrieve) the local MIRROR User for the
+ * authenticated Clerk subject.
  *
- * Throws redirect to / if user lacks required role.
+ * Identity mapping:
+ *   Clerk session → authenticated provider subject (clerkId)
+ *     → local MIRROR User (unique by clerkId)
+ *     → defaults newly-created users to LEARNER
+ *
+ * The subject is always derived from the server-verified Clerk session.
+ * It is never supplied by the client as an authority mechanism.
  */
-export async function requireRole(role: "LEARNER" | "CREATOR" | "ADMIN") {
+export async function getCurrentUser() {
   const session = await requireAuth();
+  const clerkId = session.userId as string;
 
-  // TODO: Phase 4 - Fetch user from database to verify role
-  // For now, this is a placeholder that requires database access
+  const existing = await userRepository.findByClerkId(clerkId);
+  if (existing) {
+    return existing;
+  }
 
-  return session;
+  const clerk = await currentUser();
+  const email = clerk?.emailAddresses?.[0]?.emailAddress ?? "";
+  const firstName = clerk?.firstName ?? null;
+  const lastName = clerk?.lastName ?? null;
+
+  return userRepository.upsertFromClerk(clerkId, email, firstName, lastName);
 }
 
 /**
- * Extract userId from Clerk session.
+ * Require the current local MIRROR user to have the given role.
+ *
+ * Enforces the full authorization chain:
+ *   Clerk authenticated session
+ *     → authenticated provider subject
+ *       → local MIRROR User
+ *         → local User.role
+ *           → required role
+ *
+ * Redirects unauthenticated users to /sign-in and unauthorized
+ * users (wrong role) to the public home page.
  */
-export function getUserIdFromAuth(session: any): string {
-  if (!session?.userId) {
-    throw new Error("User not authenticated");
-  }
-  return session.userId;
+export async function requireRole(role: UserRole) {
+  await requireAuth();
+  const user = await getCurrentUser();
+  assertRole(user, role);
+  return user;
 }

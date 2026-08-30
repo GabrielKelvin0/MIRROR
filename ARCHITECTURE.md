@@ -54,10 +54,19 @@ MIRROR is a layered, service-oriented application built on Next.js. The architec
 - Password recovery (provider-dependent)
 
 **Implementation:**
-- Abstract authentication provider (Clerk by default, replaceable)
-- User identity synchronization (Clerk ID ↔ MIRROR User record)
-- Session token validation
-- No password storage (delegated to provider)
+- Clerk is the authentication provider, integrated at its boundary
+- User identity synchronization (Clerk subject `clerkId` ↔ MIRROR User record)
+- Session token validation via Clerk server adapter (`lib/auth/session.ts`)
+- No password storage (delegated to Clerk)
+
+**Auth boundary (server-only):**
+- `lib/auth/session.ts` — Clerk server adapter: `requireAuth`, `getOptionalAuth`, `getCurrentUser`, `requireRole`
+- `lib/auth/roles.ts` — role authorization boundary (local User.role checks)
+- `middleware.ts` — blocks unauthenticated access to `/learner/*`, `/creator/*`, `/admin/*`
+- `lib/db/repositories/user-repository.ts` — maps `clerkId` to a unique local MIRROR User
+
+Direct Clerk imports are limited to these integration points; the rest of the
+application depends on the auth/session/roles boundary, not on Clerk directly.
 
 **Security Boundaries:**
 - All session tokens server-validated
@@ -190,22 +199,30 @@ MIRROR is a layered, service-oriented application built on Next.js. The architec
 
 ### Authentication Provider
 
-**Current:** Clerk (replaceable)
+**Current:** Clerk
 
-**Interface:** `lib/auth/provider.ts`
+**Boundary:** `lib/auth/session.ts` + `lib/auth/roles.ts` (server-only)
+
+The application depends on a small auth boundary, not on Clerk directly:
 
 ```typescript
-export interface AuthProvider {
-  validateSession(token: string): Promise<AuthSession | null>;
-  getUserIdentity(clerkId: string): Promise<ProviderIdentity | null>;
-  createUser(identity: ProviderIdentity): Promise<User>;
-}
+// lib/auth/session.ts (server-only)
+requireAuth(): Promise<ClerkSession>        // authenticated session or redirect
+getCurrentUser(): Promise<LocalUser>        // resolve/create local User from clerkId
+requireRole(role: UserRole): Promise<LocalUser> // session → local User → role check
+
+// lib/auth/roles.ts (server-only, pure)
+hasRole(user, required): boolean
+assertRole(user, required): void            // throws ForbiddenError
 ```
 
 **Why Replaceable:**
-- Clerk can be swapped for Auth0, Supabase, Firebase, or custom solution
-- Business logic does not reference Clerk-specific concepts
-- Only the provider interface matters to the rest of the app
+- Clerk can be swapped for Auth0, Supabase, Firebase, or a custom solution by
+  changing only `lib/auth/session.ts` and the identity sync in
+  `lib/auth/session.ts` + `lib/db/repositories/user-repository.ts`
+- Business logic and authorization check the local MIRROR User role, not
+  Clerk-specific concepts
+- No second auth provider is introduced
 
 ---
 
@@ -462,8 +479,8 @@ export class ValidationError extends AppError {
 
 ## Next Steps
 
-**Phase 3:** Implement the complete database schema
+**Phase 3:** Database schema — implemented (validated; migrations pending)
 
-**Phase 4:** Implement authentication flows and route protection
+**Phase 4 / 4.5:** Authentication, authorization, and stabilization — implemented
 
-**Phase 5:** Build the marketing website
+**Phase 5:** Build the marketing website (not started)

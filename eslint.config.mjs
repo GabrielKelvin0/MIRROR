@@ -1,15 +1,14 @@
-import nextPlugin from "eslint-plugin-next";
+import { FlatCompat } from "@eslint/eslintrc";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const compat = new FlatCompat({
+  baseDirectory: __dirname,
+});
 
 export default [
-  {
-    files: ["**/*.ts", "**/*.tsx"],
-    plugins: {
-      next: nextPlugin,
-    },
-    rules: {
-      ...nextPlugin.configs.recommended.rules,
-      ...nextPlugin.configs["core-web-vitals"].rules,
-      "@next/next/no-html-link-for-pages": "off",
-    },
-  },
+  ...compat.extends("next/core-web-vitals", "next/typescript"),
 ];

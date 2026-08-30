@@ -1,6 +1,7 @@
 // This file exports the Prisma client.
 // Centralize the client so it can be cached and reused.
 
+import "server-only";
 import { PrismaClient } from "@prisma/client";
 
 let prisma: PrismaClient;

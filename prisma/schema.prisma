@@ -28,12 +28,10 @@ model User {
   creatorProfile CreatorProfile?
   strategies Strategy[]
   follows Follow[] @relation("UserFollows")
-  followedBy Follow[] @relation("FollowedBy")
   portfolios PaperPortfolio[]
   notifications Notification[]
   learningProgress Progress[]
   subscriptions Subscription[]
-  entitlements Entitlement[]
   reports Report[]
   auditLogs AuditLog[]
   moderationActions ModerationAction[]

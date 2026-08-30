@@ -27,12 +27,16 @@ MIRROR is a layered, service-oriented application built on Next.js. The architec
 
 **Purpose:** Marketing, product education, conversion to signup
 
-**Implemented sections (Phase 5):**
+**Implemented sections (Phase 5, extended by Phase 7 discovery):**
 - Homepage hero with core message
 - Why MIRROR (three pillars: Methodology, Transparency, Education)
 - Transparent strategy blueprint preview (sample strategies, labeled)
 - Investment principles
 - Decision-history transparency
+- Phase 7: `/strategies` discovery — search, filters (philosophy, asset class,
+  risk, time horizon), risk-forward cards, and sort that never ranks by return
+  alone; `/strategies/[slug]` blueprint detail with creator profile, illustrative
+  performance/drawdown/volatility, philosophy, update history, and disclosures
 - What MIRROR is / is not (guardrails)
 - CTA and footer with disclosures
 
@@ -508,3 +512,12 @@ updates, owner-gated preview/publish/archive; see the Creator Application
 boundary above). DB-backed: requires migrations + a live PostgreSQL, which are
 not available in this container (missing OpenSSL and `DATABASE_URL`), so runtime
 was not executed here; verification relied on typecheck, unit tests, and lint.
+
+**Phase 7:** Strategy Discovery — implemented over the same typed sample-data
+boundary as Phase 5 (library-driven, no DB required, runtime-verifiable here).
+Adds search + philosophy/asset class/risk/time-horizon filters and risk-forward
+cards, and a blueprint detail with creator profile, illustrative quantified
+performance/drawdown/volatility, methodology, update history, and disclosures.
+Discovery logic lives in `lib/data/strategies.ts` and is covered by unit tests
+in `lib/data/strategies.test.ts`. Risk and methodology are always surfaced;
+strategies are never ranked by return alone.

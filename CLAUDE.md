@@ -224,10 +224,15 @@ npm run format
   typecheck, and are unit-tested, but were NOT runtime-executed here (no DB).
 - Role provisioning (assigning CREATOR/ADMIN to existing users) is not yet implemented as a user-facing capability; new users default to LEARNER
 - Local identity is keyed by `clerkId` (the authenticated Clerk subject); see lib/db/repositories/user-repository.ts
-- The public marketing website (Phase 5) is driven by typed sample data in
-  lib/data/strategies.ts. These are educational models, never live products or
-  guarantees; they are shaped like future Prisma-backed records to be swapped
-  without redesign.
+- The public marketing website (Phase 5, extended by Phase 7) is driven by
+  typed sample data in lib/data/strategies.ts. These are educational models,
+  never live products or guarantees; they are shaped like future Prisma-backed
+  records to be swapped without redesign.
+- Phase 7 (Strategy Discovery) adds client/server-driven search and
+  philosophy/asset class/risk/time-horizon filters over that sample data, with
+  risk and methodology always visible. Strategies must never be ranked by
+  return alone; the default sort is by risk. Discovery logic and its unit tests
+  live in lib/data/strategies.ts and lib/data/strategies.test.ts.
 
 ## Security Boundaries (implemented)
 

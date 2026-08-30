@@ -69,6 +69,7 @@ MIRROR/
 ├── MIRROR_SPEC.md    # Product specification
 ├── ARCHITECTURE.md   # Application architecture
 ├── CLAUDE.md         # Engineering rules
+├── MIRROR_MASTER_PROMPT.md # Phased implementation prompt (0–17)
 ├── package.json      # Dependencies
 ├── tsconfig.json     # TypeScript config
 ├── next.config.ts    # Next.js config
@@ -144,9 +145,8 @@ MIRROR is built in phases. Current status:
 - ✅ **Phase 5:** Marketing website (public pages, strategy blueprints)
 - ⏳ **Phase 6+:** Feature implementation
 
-Phase requirements were historically tracked in MIRROR_CODEX_PROMPT.md, which
-is not currently present in this repository; requirements are sourced from
-MIRROR_SPEC.md.
+Phase work is tracked in MIRROR_MASTER_PROMPT.md (Phases 0–17); product
+requirements are sourced from MIRROR_SPEC.md.
 
 ## Product Vision
 
@@ -184,11 +184,14 @@ Real-money features require separate legal and compliance review before implemen
 - **MIRROR_SPEC.md** — Complete product specification
 - **ARCHITECTURE.md** — Application architecture and boundaries
 - **CLAUDE.md** — Engineering rules and standards
+- **MIRROR_MASTER_PROMPT.md** — Phased implementation prompt (Phases 0–17) for
+  driving incremental, safe development
 
 > Note: MIRROR_CODEX_PROMPT.md (build phases) and MIRROR_UI_UX.md (design
 > system) are referenced by earlier phases in this documentation but are not
 > currently present in the repository. They have not been recreated; use
-> MIRROR_SPEC.md and ARCHITECTURE.md as the authoritative sources.
+> MIRROR_SPEC.md and ARCHITECTURE.md as the authoritative sources. Phase work
+> is driven by MIRROR_MASTER_PROMPT.md.
 
 ## Contributing
 

@@ -15,6 +15,7 @@ This document defines the engineering principles and guidelines for MIRROR devel
 > (design direction) are referenced by earlier phases but are not currently
 > present in this repository. They have not been recreated or fabricated;
 > use MIRROR_SPEC.md and ARCHITECTURE.md as the authoritative sources.
+> Phased implementation is driven by MIRROR_MASTER_PROMPT.md (Phases 0–17).
 
 ### 2. Change Discipline
 

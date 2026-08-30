@@ -9,7 +9,8 @@ Note: two historical implementation/design documents referenced in earlier
 phases — MIRROR_CODEX_PROMPT.md (build phases) and MIRROR_UI_UX.md (design
 system) — are not currently present in this repository. This specification
 remains the source of truth for product requirements; no replacement
-documents have been fabricated in their place.
+documents have been fabricated in their place. Phased implementation work is
+driven by MIRROR_MASTER_PROMPT.md.
 
 Refer to this document before adding features or modifying existing behavior.
 

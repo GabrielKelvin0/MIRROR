@@ -6,6 +6,7 @@ import { portfolioRepository, strategyRepository } from "@/lib/db";
 import { PortfolioAllocationManager } from "@/components/learner/PortfolioAllocationManager";
 import { PortfolioDecisionForm } from "@/components/learner/PortfolioDecisionForm";
 import { PortfolioDeleteButton } from "@/components/learner/PortfolioDeleteButton";
+import { PerformanceRiskPanel } from "@/components/learner/PerformanceRiskPanel";
 
 export const metadata: Metadata = {
   title: "Paper Portfolio",
@@ -115,6 +116,10 @@ export default async function PortfolioDetailPage({ params }: { params: { id: st
           </p>
         </div>
       </section>
+
+      <PerformanceRiskPanel
+        allocations={allocations.map((a) => ({ label: a.name, weight: a.allocationPercentage }))}
+      />
 
       <section className="rounded-xl border border-neutral-200 bg-white p-6">
         <div className="flex items-center justify-between">

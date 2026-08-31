@@ -274,6 +274,17 @@ npm run format
   the sample curriculum has no real `Lesson` rows, so progress stores
   "courseSlug/lessonSlug" in `lessonId`; a later phase must seed real
   `Course`/`Lesson` rows (or reconcile progress) so the FK resolves.
+- Phase 11 (Performance & Risk) has no DB dependency. Pure deterministic
+  metrics (period return, max drawdown + recovery, annualised volatility,
+  benchmark comparison, allocation, correlation) live in
+  lib/services/performance-rules.ts (unit-tested in performance-rules.test.ts)
+  and operate over a clearly-labelled seed/demo series in
+  lib/data/performance-demo.ts (no real or fabricated historical market data).
+  Every figure carries an explicit period and data basis that the UI must
+  always show. Surfaced in a learner `PerformanceRiskPanel` (server component,
+  components/learner/) on the paper portfolio detail page. It compiles,
+  typechecks, and is unit-tested (107 total tests). Everything is hypothetical
+  and educational only.
 
 ## Security Boundaries (implemented)
 

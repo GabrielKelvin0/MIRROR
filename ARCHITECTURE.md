@@ -586,3 +586,27 @@ KNOWN LIMITATION — schema FK: `Progress.lessonId` is a foreign key to
 `Lesson` rows yet, so progress stores the deterministic `"courseSlug/lessonSlug"`
 key in `lessonId`. When a later phase seeds real `Course`/`Lesson` rows, progress
 must be reconciled to real lesson ids so the FK resolves.
+
+**Phase 11:** Performance & Risk — implemented (no DB dependency; runtime
+verifiable via typecheck/tests/lint in this container). Adds a deterministic
+metrics engine for: historical/period return, maximum drawdown and recovery
+time, annualised volatility (sample std-dev of periodic returns), benchmark
+comparison (excess return), allocation (normalised weights), and correlation
+(Pearson, where the data supports it). Every calculation honours the phase rule
+"performance calculations must state the relevant period and data basis", so the
+engine exposes `periodLabel` and `dataBasis` that callers must always surface.
+
+All of the pure, deterministic math lives in `lib/services/performance-rules.ts`
+(unit-tested in `performance-rules.test.ts`) and operates over a typed
+`ValueSeries` of chronological points. The data fed to the engine is a clearly
+labelled SEED/DEMO series in `lib/data/performance-demo.ts` (frozen, monthly,
+with an explicit period label and an honest "seed/demo — not real market data"
+basis), in line with Phase 11's instruction not to fabricate historical market
+data. The metrics are surfaced in a learner-facing `PerformanceRiskPanel`
+(server component, under `components/learner/`) added to the paper portfolio
+detail page (`/learner/portfolio/[id]`), showing the return/drawdown/volatility/
+benchmark/correlation/recovery metrics plus the portfolio's allocation
+breakdown and a method-and-basis disclosure. Everything is clearly hypothetical
+and educational — never a claim of real results or a guarantee. The panel is
+not DB-backed and requires no migrations; a future phase may source a real time
+series from a data provider when one is configured.

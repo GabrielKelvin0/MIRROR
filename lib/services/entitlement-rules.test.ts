@@ -136,4 +136,34 @@ describe("strategyAccess", () => {
     const ctx: StrategyAccessContext = { ...base, strategy: { priceMinor: 0 } };
     expect(strategyAccess(ctx).allowed).toBe(true);
   });
+
+  it("denies a paid strategy to even the highest tier without a subscription", () => {
+    // Contract: subscription state is independent of plan tier. A
+    // PREMIUM_CREATOR still must hold the strategy subscription to view a
+    // paid strategy — no plan entitlement bypasses the subscription gate.
+    const ctx: StrategyAccessContext = {
+      plan: "PREMIUM_CREATOR",
+      holdsStrategySubscription: false,
+      strategy: { priceMinor: 999, requiresProPlan: true },
+    };
+    const decision = strategyAccess(ctx);
+    expect(decision.allowed).toBe(false);
+    if (!decision.allowed) {
+      expect(decision.reason).toBe("requires_strategy_subscription");
+    }
+  });
+
+  it("treats an undefined price as a free strategy", () => {
+    const ctx: StrategyAccessContext = { ...base, strategy: {} };
+    expect(strategyAccess(ctx).allowed).toBe(true);
+  });
+
+  it("does not apply the pro-plan gate when requiresProPlan is falsy", () => {
+    const ctx: StrategyAccessContext = {
+      plan: "FREE",
+      holdsStrategySubscription: true,
+      strategy: { priceMinor: 999 },
+    };
+    expect(strategyAccess(ctx).allowed).toBe(true);
+  });
 });

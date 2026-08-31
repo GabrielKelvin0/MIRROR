@@ -7,9 +7,11 @@ MIRROR is a transparent investment strategy education platform. It enables exper
 ## Core Differentiator
 
 **Traditional Copy Trading:**
+
 > "What did this investor buy?"
 
 **MIRROR:**
+
 > "Why did this investor make that decision?"
 
 MIRROR focuses on methodology, education, and independent thinking rather than blind copying.
@@ -17,6 +19,7 @@ MIRROR focuses on methodology, education, and independent thinking rather than b
 ## Key Features (MVP)
 
 ### For Learners
+
 - Discover and search investment strategies
 - Study investment theses and allocation reasoning
 - Follow strategies and receive updates
@@ -25,6 +28,7 @@ MIRROR focuses on methodology, education, and independent thinking rather than b
 - Compare strategies and philosophies
 
 ### For Strategy Creators
+
 - Publish investment strategies with complete methodology
 - Define allocation, risk profile, and time horizon
 - Write investment theses and explain decisions
@@ -33,6 +37,7 @@ MIRROR focuses on methodology, education, and independent thinking rather than b
 - Monitor strategy analytics
 
 ### For Admins
+
 - Manage users and creators
 - Moderate strategy content
 - Review reports and audit logs
@@ -80,6 +85,7 @@ MIRROR/
 ## Getting Started
 
 ### Prerequisites
+
 - Node.js 18+ and npm
 - PostgreSQL 14+ (local or remote)
 - Clerk account (for authentication)
@@ -153,6 +159,7 @@ MIRROR is built in phases. Current status:
 - ✅ **Phase 13:** Security audit (audited middleware, auth, all server actions, repositories, DB queries, error handling; fixed error-message leakage to clients; no SQL-injection/XSS/IDOR/mass-assignment issues found)
 - ✅ **Phase 14:** Responsive & accessibility audit (fixed contrast failures on small text/CTA buttons, added skip-to-content links and table `scope`, fixed a sr-only-only error display, responsive grids/narrow-width overflow, touch targets, heading hierarchy)
 - ✅ **Phase 15:** Performance (removed duplicate DB query on the paper-portfolio detail page and parallelized its independent queries; collapsed the creator edit/preview pages from 5 queries to 1 via a single ownership-checked detail read; no N+1 loops found elsewhere)
+- ✅ **Phase 16 (Testing):** Expanded automated coverage for the highest-value risk areas — the authorization choke-point (`lib/auth/session.ts`, now 8 tests), role guards (`hasRole` strict equality), strategy publish/update rules (self-transition, whitespace, weight boundaries), entitlement `strategyAccess` (paid strategies denied even to the highest tier without a subscription), portfolio calc edge cases (NaN inputs, allocation-total boundaries), performance data-quality handling (zero-value/constant series), and every `AppError` subclass. Suite grew from 126 to 163 tests across 10 files.
 - ⏳ **Phase 16+:** Feature implementation
 
 Phase work is tracked in MIRROR_MASTER_PROMPT.md (Phases 0–17); product
@@ -210,6 +217,7 @@ See CLAUDE.md for engineering standards and review checklist.
 ## Security
 
 MIRROR takes security seriously. All operations affecting protected data are:
+
 - Server-side verified
 - Authenticated and authorized
 - Validated and sanitized

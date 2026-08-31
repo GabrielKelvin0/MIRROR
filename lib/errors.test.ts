@@ -4,6 +4,9 @@ import {
   ValidationError,
   ForbiddenError,
   NotFoundError,
+  UnauthorizedError,
+  ConflictError,
+  BusinessRuleError,
   safeErrorMessage,
 } from "./errors";
 
@@ -47,5 +50,47 @@ describe("safeErrorMessage", () => {
     expect(safeErrorMessage(new AppError("X", 400, "custom app message"))).toBe(
       "custom app message"
     );
+  });
+});
+
+describe("AppError subclasses (codes/status/defaults)", () => {
+  it("UnauthorizedError maps to code UNAUTHORIZED and status 401", () => {
+    const err = new UnauthorizedError();
+    expect(err).toBeInstanceOf(AppError);
+    expect(err.code).toBe("UNAUTHORIZED");
+    expect(err.statusCode).toBe(401);
+    expect(err.message).toBe("Authentication required");
+  });
+
+  it("ForbiddenError maps to code FORBIDDEN and status 403", () => {
+    const err = new ForbiddenError();
+    expect(err.code).toBe("FORBIDDEN");
+    expect(err.statusCode).toBe(403);
+  });
+
+  it("NotFoundError maps to code NOT_FOUND and status 404", () => {
+    const err = new NotFoundError();
+    expect(err.code).toBe("NOT_FOUND");
+    expect(err.statusCode).toBe(404);
+  });
+
+  it("ValidationError maps to code VALIDATION_ERROR, status 400, and exposes fields", () => {
+    const err = new ValidationError("Bad name", { name: "required" });
+    expect(err.code).toBe("VALIDATION_ERROR");
+    expect(err.statusCode).toBe(400);
+    expect(err.fields).toEqual({ name: "required" });
+  });
+
+  it("BusinessRuleError maps to code BUSINESS_RULE_ERROR and status 422", () => {
+    const err = new BusinessRuleError("Cannot transition");
+    expect(err.code).toBe("BUSINESS_RULE_ERROR");
+    expect(err.statusCode).toBe(422);
+  });
+
+  it("ConflictError maps to code CONFLICT and status 409", () => {
+    const err = new ConflictError();
+    expect(err.code).toBe("CONFLICT");
+    expect(err.statusCode).toBe(409);
+    expect(err.message).toBe("Resource already exists");
   });
 });

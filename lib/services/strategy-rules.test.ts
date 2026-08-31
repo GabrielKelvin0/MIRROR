@@ -153,4 +153,30 @@ describe("assertTransition", () => {
     expect(() => assertTransition("ARCHIVED", "PUBLISHED")).toThrow(BusinessRuleError);
     expect(() => assertTransition("ARCHIVED", "ARCHIVED")).toThrow(BusinessRuleError);
   });
+
+  it("rejects a draft remaining a draft (no idempotent re-publish/no-op)", () => {
+    // Contract: a self-transition is not an allowed move, even DRAFT -> DRAFT.
+    // This prevents a no-op status change from silently passing the guard.
+    expect(() => assertTransition("DRAFT", "DRAFT")).toThrow(BusinessRuleError);
+  });
+});
+
+describe("validateAllocation boundaries", () => {
+  it("accepts a zero weight as a valid boundary value", () => {
+    expect(() => validateAllocation({ assetClass: "Bonds", targetWeight: 0 }, 0)).not.toThrow();
+  });
+
+  it("rejects an infinite weight", () => {
+    expect(() => validateAllocation({ assetClass: "Bonds", targetWeight: Infinity }, 0)).toThrow(
+      ValidationError
+    );
+  });
+});
+
+describe("validateStrategyUpdate whitespace", () => {
+  it("rejects a whitespace-only title (non-empty after trimming)", () => {
+    expect(() =>
+      validateStrategyUpdate({ title: "   ", description: "d", effectiveDate: new Date() })
+    ).toThrow(ValidationError);
+  });
 });

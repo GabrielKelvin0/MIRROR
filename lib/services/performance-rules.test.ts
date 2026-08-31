@@ -164,3 +164,34 @@ describe("normaliseAllocation", () => {
     ).toThrow(ValidationError);
   });
 });
+
+describe("periodReturn edge cases", () => {
+  it("returns 0% when the first and last values are equal", () => {
+    expect(periodReturn(series("p", [100, 100, 100]))).toBe(0);
+  });
+});
+
+describe("annualisedVolatility data-quality handling", () => {
+  it("skips a zero-value point without producing NaN or Infinity", () => {
+    // A zero value in the middle must not blow up the volatility math.
+    const result = annualisedVolatility(series("p", [100, 0, 100, 110]));
+    expect(Number.isFinite(result)).toBe(true);
+    expect(result).toBeGreaterThan(0);
+  });
+});
+
+describe("correlation edge cases", () => {
+  it("returns null when a series is constant (zero variance)", () => {
+    expect(correlation(series("a", [100, 100, 100]), series("b", [100, 100, 100]))).toBeNull();
+  });
+
+  it("returns near -1 for perfectly opposite movement", () => {
+    const r = correlation(series("a", [100, 110, 120]), series("b", [120, 110, 100]));
+    expect(r).not.toBeNull();
+    expect(r as number).toBeCloseTo(-1, 6);
+  });
+
+  it("returns null for series shorter than two comparable points", () => {
+    expect(correlation(series("a", [100]), series("b", [100]))).toBeNull();
+  });
+});

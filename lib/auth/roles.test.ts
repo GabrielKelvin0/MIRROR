@@ -73,3 +73,17 @@ describe("assertRole (enforced authorization)", () => {
     expect(() => assertRole(arbitraryClaim, "CREATOR")).toThrow(ForbiddenError);
   });
 });
+
+describe("no implicit role hierarchy (strict equality)", () => {
+  it("a higher role does NOT satisfy a lower-role guard", () => {
+    // Roles are strictly equal, not hierarchical: an ADMIN is not a LEARNER
+    // and not a CREATOR for guard purposes. Guards must be explicit.
+    expect(hasRole(admin, "LEARNER")).toBe(false);
+    expect(hasRole(admin, "CREATOR")).toBe(false);
+  });
+
+  it("assertRole enforces the strict boundary for a higher role vs lower guard", () => {
+    expect(() => assertRole(admin, "LEARNER")).toThrow(ForbiddenError);
+    expect(() => assertRole(admin, "CREATOR")).toThrow(ForbiddenError);
+  });
+});

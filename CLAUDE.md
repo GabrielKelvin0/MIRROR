@@ -22,6 +22,7 @@ This document defines the engineering principles and guidelines for MIRROR devel
 Make the smallest safe change that completely satisfies the task.
 
 **Do NOT:**
+
 - Perform unrelated refactoring
 - Rename unrelated files
 - Upgrade dependencies without reason
@@ -31,6 +32,7 @@ Make the smallest safe change that completely satisfies the task.
 - Add optional features without approval
 
 **Do:**
+
 - Implement Required work (necessary to satisfy the request)
 - Implement Supporting work (necessary for correctness, security, stability)
 - Only implement Optional work with explicit approval
@@ -47,6 +49,7 @@ Make the smallest safe change that completely satisfies the task.
 ### 4. Financial Product Guardrails
 
 MIRROR MVP focuses on:
+
 - Education
 - Strategy transparency
 - Model portfolios
@@ -54,6 +57,7 @@ MIRROR MVP focuses on:
 - Hypothetical simulation
 
 Do NOT implement:
+
 - Automatic trade execution
 - Broker connections
 - Personalized automated investment advice
@@ -63,6 +67,7 @@ Do NOT implement:
 ### 5. No Fabrication
 
 Never invent:
+
 - APIs
 - Environment variables
 - Database fields
@@ -147,6 +152,7 @@ styles/
 ### Testing
 
 Prioritize testing for:
+
 - Authentication and authorization
 - Ownership and permissions
 - Business logic (calculations, state changes)
@@ -326,11 +332,23 @@ npm run format
   listUpdates with repeated ownership checks — replaced by a single
   ownership-checked `getOwnedDetail` (5 → 1). Query-count reductions verifiable
   by code review; no runtime/WASR measurements available here.
+- Phase 16 (Testing) prioritised automated coverage (not full-coverage chasing)
+  over the phase's high-value risk areas: authorization, strategy
+  ownership/publishing/update behavior, entitlement logic, portfolio/allocation
+  calcs, validation, and security-sensitive operations. Added the previously
+  untested authorization choke-point `lib/auth/session.ts` as
+  `lib/auth/session.test.ts` (8 tests, mocks `server-only` + Clerk +
+  `next/navigation` + `@/lib/db`), strict role-equality guards, strategy
+  self-transition/whitespace/weight boundaries, entitlement `strategyAccess`
+  denial for paid strategies even on the highest plan without a subscription,
+  portfolio/performance edge cases, and every `AppError` subclass
+  code/status. Suite grew 126 → 163 tests across 10 files; typecheck, ESLint,
+  Prettier clean.
 
 ## Security Boundaries (implemented)
 
 - Clerk authentication is real: /sign-in and /sign-up use Clerk components (no fake forms)
-- Middleware blocks unauthenticated access to /learner/*, /creator/*, /admin/*
+- Middleware blocks unauthenticated access to /learner/_, /creator/_, /admin/*
 - Server-side authorization (requireRole) checks the local database User.role — never client state
 - Prisma client, repositories, authorization, and session resolution are server-only
 - Secrets (CLERK_SECRET_KEY, DATABASE_URL) are never exposed to browser code

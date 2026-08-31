@@ -19,6 +19,7 @@ MIRROR is a layered, service-oriented application built on Next.js. The architec
 ### 1. Public Website
 
 **Routes:** public, no authentication required
+
 - `/` — marketing homepage
 - `/strategies` — strategy blueprint discovery
 - `/strategies/[slug]` — individual strategy blueprint
@@ -28,6 +29,7 @@ MIRROR is a layered, service-oriented application built on Next.js. The architec
 **Purpose:** Marketing, product education, conversion to signup
 
 **Implemented sections (Phase 5, extended by Phase 7 discovery):**
+
 - Homepage hero with core message
 - Why MIRROR (three pillars: Methodology, Transparency, Education)
 - Transparent strategy blueprint preview (sample strategies, labeled)
@@ -60,6 +62,7 @@ swapped later without a redesign.
 **Purpose:** User identity and session management
 
 **Flows:**
+
 - Sign up
 - Sign in
 - Sign out
@@ -67,12 +70,14 @@ swapped later without a redesign.
 - Password recovery (provider-dependent)
 
 **Implementation:**
+
 - Clerk is the authentication provider, integrated at its boundary
 - User identity synchronization (Clerk subject `clerkId` ↔ MIRROR User record)
 - Session token validation via Clerk server adapter (`lib/auth/session.ts`)
 - No password storage (delegated to Clerk)
 
 **Auth boundary (server-only):**
+
 - `lib/auth/session.ts` — Clerk server adapter: `requireAuth`, `getOptionalAuth`, `getCurrentUser`, `requireRole`
 - `lib/auth/roles.ts` — role authorization boundary (local User.role checks)
 - `middleware.ts` — blocks unauthenticated access to `/learner/*`, `/creator/*`, `/admin/*`
@@ -82,6 +87,7 @@ Direct Clerk imports are limited to these integration points; the rest of the
 application depends on the auth/session/roles boundary, not on Clerk directly.
 
 **Security Boundaries:**
+
 - All session tokens server-validated
 - No authentication state in browser localStorage (delegated to provider)
 - Redirect unauthenticated users to sign-in
@@ -96,6 +102,7 @@ application depends on the auth/session/roles boundary, not on Clerk directly.
 **Purpose:** Strategy discovery, learning, paper portfolio management
 
 **Features:**
+
 - Strategy discovery and search
 - Strategy detail pages
 - Following strategies
@@ -120,6 +127,7 @@ application depends on the auth/session/roles boundary, not on Clerk directly.
 **Purpose:** Strategy creation, publishing, management
 
 **Implemented (Phase 6):**
+
 - Strategy creation (draft) and editing
 - Blueprint fields: philosophy, objective, time horizon, risk description,
   target allocation, thesis, decision rules, rebalance policy, exit /
@@ -149,6 +157,7 @@ strategy is verified server-side (never client-supplied identity)
 **Purpose:** Platform moderation and management
 
 **Features:**
+
 - User management
 - Creator review and approval
 - Strategy moderation
@@ -236,6 +245,7 @@ assertRole(user, required): void            // throws ForbiddenError
 ```
 
 **Why Replaceable:**
+
 - Clerk can be swapped for Auth0, Supabase, Firebase, or a custom solution by
   changing only `lib/auth/session.ts` and the identity sync in
   `lib/auth/session.ts` + `lib/db/repositories/user-repository.ts`
@@ -259,6 +269,7 @@ export interface MarketDataProvider {
 ```
 
 **Why Replaceable:**
+
 - Can integrate with Yahoo Finance, IEX, Polygon, or Alpha Vantage later
 - Business logic uses metrics, not raw provider data
 - Demo data is clearly labeled to avoid confusion
@@ -279,6 +290,7 @@ export interface PaymentProvider {
 ```
 
 **Why Replaceable:**
+
 - Stripe can be swapped for Paddle, Lemonsqueezy, or custom billing
 - Subscription logic is separate from payment processing
 - Payment secrets never stored in database
@@ -299,6 +311,7 @@ export interface NotificationProvider {
 ```
 
 **Why Replaceable:**
+
 - Email can be SendGrid, Resend, or self-hosted
 - Push can be Firebase, OneSignal, or custom
 - Notifications queued in database, delivered via provider
@@ -319,6 +332,7 @@ export interface StorageProvider {
 ```
 
 **Why Replaceable:**
+
 - S3 can be swapped for Cloudflare R2, Backblaze B2, or self-hosted
 - File upload logic is separate from storage backend
 - No private credentials in database
@@ -336,7 +350,7 @@ export class StrategyRepository {
   async findPublished(filters: StrategyFilters): Promise<Strategy[]> {
     return prisma.strategy.findMany({
       where: {
-        status: 'PUBLISHED',
+        status: "PUBLISHED",
         ...filters,
       },
     });
@@ -379,8 +393,8 @@ export async function updateStrategy(id: string, data: UpdateStrategyInput) {
   const validated = validateStrategyUpdate(data);
 
   // 4. Apply domain rules
-  if (strategy.status === 'PUBLISHED' && !canEditPublished()) {
-    throw new BusinessRuleError('Published strategies cannot be edited');
+  if (strategy.status === "PUBLISHED" && !canEditPublished()) {
+    throw new BusinessRuleError("Published strategies cannot be edited");
   }
 
   // 5. Persist
@@ -389,7 +403,7 @@ export async function updateStrategy(id: string, data: UpdateStrategyInput) {
   // 6. Audit
   await auditLog.create({
     userId: session.userId,
-    action: 'STRATEGY_UPDATED',
+    action: "STRATEGY_UPDATED",
     resourceId: id,
   });
 
@@ -402,6 +416,7 @@ export async function updateStrategy(id: string, data: UpdateStrategyInput) {
 ## Financial Safety Boundaries
 
 **What IS possible:**
+
 - ✅ View strategies
 - ✅ Create paper portfolios
 - ✅ Simulate portfolio performance
@@ -411,6 +426,7 @@ export async function updateStrategy(id: string, data: UpdateStrategyInput) {
 - ✅ Record strategy decisions/updates
 
 **What IS NOT possible:**
+
 - ❌ Execute real trades
 - ❌ Connect to brokers
 - ❌ Transfer real money
@@ -421,6 +437,7 @@ export async function updateStrategy(id: string, data: UpdateStrategyInput) {
 - ❌ Promise guaranteed returns
 
 **Enforcement:**
+
 - No broker API keys stored
 - No order execution endpoints exist
 - No payment flow to trading accounts
@@ -432,6 +449,7 @@ export async function updateStrategy(id: string, data: UpdateStrategyInput) {
 ## Server vs Client
 
 **Server-side (always):**
+
 - Authentication validation
 - Authorization checks
 - Database access
@@ -442,6 +460,7 @@ export async function updateStrategy(id: string, data: UpdateStrategyInput) {
 - External API calls
 
 **Client-side (UI only):**
+
 - Rendering
 - Form input
 - Client-side validation (UX, not security)
@@ -450,6 +469,7 @@ export async function updateStrategy(id: string, data: UpdateStrategyInput) {
 - Animations
 
 **Never on client:**
+
 - Secret keys (API, database, encryption)
 - Sensitive user data
 - Authorization decisions
@@ -469,7 +489,7 @@ export class AppError extends Error {
   constructor(
     public code: string,
     public statusCode: number,
-    message: string,
+    message: string
   ) {
     super(message);
   }
@@ -477,19 +497,19 @@ export class AppError extends Error {
 
 export class UnauthorizedError extends AppError {
   constructor() {
-    super('UNAUTHORIZED', 401, 'Authentication required');
+    super("UNAUTHORIZED", 401, "Authentication required");
   }
 }
 
 export class ForbiddenError extends AppError {
   constructor() {
-    super('FORBIDDEN', 403, 'You do not have permission');
+    super("FORBIDDEN", 403, "You do not have permission");
   }
 }
 
 export class ValidationError extends AppError {
   constructor(public fields: Record<string, string>) {
-    super('VALIDATION_ERROR', 400, 'Validation failed');
+    super("VALIDATION_ERROR", 400, "Validation failed");
   }
 }
 ```
@@ -683,6 +703,7 @@ keyboard/focus, labels, semantics, heading hierarchy, table/chart accessibility,
 error messaging, typography, and contrast.
 
 Fixed within scope (all low-risk class-only changes):
+
 - Contrast: darkened small text that failed WCAG AA on light backgrounds —
   `text-emerald-600` eyebrows/categories/text links → `text-emerald-700`,
   white-on-`emerald-500` CTA button → `emerald-600`, `text-neutral-400`
@@ -735,3 +756,19 @@ dependency). Three real, non-speculative contributors were found and fixed:
 
 No browser/Lighthouse measurements are possible here; the above are query-count
 reductions on hot pages, verifiable by code review.
+
+**Phase 16:** Testing — prioritised automated coverage (not full-coverage chasing)
+for the areas MIRROR_MASTER_PROMPT.md flags as highest value: authorization,
+strategy ownership/publishing/update behavior, portfolio and allocation
+calculations, subscription entitlement logic, input validation, and
+security-sensitive operations. The previously-untested authorization
+choke-point `lib/auth/session.ts` (`requireAuth`, `getOptionalAuth`,
+`getCurrentUser`, `requireRole`) now has its own mock-based suite
+(`lib/auth/session.test.ts`, 8 tests) with `server-only`, Clerk, `next/navigation`
+and the DB layer mocked. Added strict-equality role-guard assertions (a higher
+role never satisfies a lower guard), strategy self-transition/whitespace/weight
+boundary cases, entitlement `strategyAccess` denial for paid strategies even on
+the highest plan without a subscription, portfolio NaN/0%/allocation-total edge
+cases, performance data-quality handling (zero-value/constant series, opposite
+correlation, 0% return), and every `AppError` subclass code/status. Suite grew
+from 126 to 163 tests across 10 files; typecheck, ESLint, and Prettier all clean.

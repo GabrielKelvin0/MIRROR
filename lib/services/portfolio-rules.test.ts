@@ -175,3 +175,62 @@ describe("SAMPLE_BENCHMARK", () => {
     expect(SAMPLE_BENCHMARK.annualReturn).toBe(6.0);
   });
 });
+
+describe("validation edge cases", () => {
+  it("rejects NaN quantity, entry price, and current price on a position", () => {
+    // NaN must never propagate into portfolio valuations silently.
+    expect(() =>
+      validatePosition({ symbol: "AAPL", quantity: Number.NaN, entryPrice: 10, currentPrice: 12 })
+    ).toThrow(ValidationError);
+    expect(() =>
+      validatePosition({ symbol: "AAPL", quantity: 1, entryPrice: Number.NaN, currentPrice: 12 })
+    ).toThrow(ValidationError);
+    expect(() =>
+      validatePosition({ symbol: "AAPL", quantity: 1, entryPrice: 10, currentPrice: Number.NaN })
+    ).toThrow(ValidationError);
+  });
+
+  it("rejects a NaN allocation percentage", () => {
+    expect(() =>
+      validateAllocationInput({ strategyId: "s1", allocationPercentage: Number.NaN })
+    ).toThrow(ValidationError);
+  });
+});
+
+describe("portfolio return math", () => {
+  it("returns 0% when current value equals starting capital", () => {
+    expect(portfolioReturn(1000, 1000)).toBe(0);
+  });
+
+  it("handles an empty positions list", () => {
+    expect(portfolioValue(500, [])).toBe(500);
+  });
+
+  it("sums cash and position values", () => {
+    expect(portfolioValue(200, [{ quantity: 3, currentPrice: 100 }])).toBe(500);
+  });
+});
+
+describe("assertAllocationTotal", () => {
+  it("accepts allocations that total exactly 100%", () => {
+    expect(() =>
+      assertAllocationTotal([{ allocationPercentage: 50 }, { allocationPercentage: 50 }])
+    ).not.toThrow();
+  });
+
+  it("rejects a total that exceeds 100%", () => {
+    expect(() =>
+      assertAllocationTotal([{ allocationPercentage: 60 }, { allocationPercentage: 50 }])
+    ).toThrow(ValidationError);
+  });
+
+  it("treats the empty allocation list as valid", () => {
+    expect(() => assertAllocationTotal([])).not.toThrow();
+  });
+
+  it("rejects a NaN allocation percentage", () => {
+    expect(() => assertAllocationTotal([{ allocationPercentage: Number.NaN }])).toThrow(
+      ValidationError
+    );
+  });
+});

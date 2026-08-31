@@ -647,3 +647,31 @@ plan-comparison table derived purely from the rules, and is linked from the
 learner dashboard. No payments are charged anywhere. The `Strategy` schema has no
 price field yet, so all strategies are treated as free for entitlement purposes;
 the `strategyAccess` rule already supports pricing when a price is configured.
+
+**Phase 13:** Security Audit — performed. Reviewed every route and server
+action (there are no API routes, file uploads, or external-service calls in
+this codebase), the middleware/auth boundary, all repositories, database
+queries, and error handling.
+
+Findings: the architecture is already strong — Clerk-backed authentication with
+server-side `requireRole`/`assertRole` checks on the local DB user; ownership
+verified at the repository boundary on every owned resource (IDOR-protected);
+explicit field whitelists in every Prisma `create`/`update` (no mass
+assignment); server-side validation via pure rules modules; Prisma
+parameterisation (no raw SQL / SQL-injection surface); no XSS sinks
+(`dangerouslySetInnerHTML`/`innerHTML` are absent — React escaping + typed
+server-rendered content only); no secrets in client components; `server-only`
+enforced on all repositories/session/payments; the payment provider stays an
+unconfigured stub so payments cannot run.
+
+Confirmed fix (high-impact for the "never expose internals to users" rule):
+server-action error handling previously returned a raw `err.message` to the
+client, which could leak internal details (query text, stack traces, file
+paths) for non-AppError failures. Added `safeErrorMessage` in `lib/errors.ts`
+(unit-tested in `lib/errors.test.ts`) that passes through intentional
+`AppError` messages but collapses every other error to a generic fallback, and
+wired it into all four server-action files. Noted as "Not verified here" (as in
+CLAUDE.md): live browser testing, rate limiting on server actions (Clerk guards
+auth; there is no unauthenticated brute-force surface), and audit-log
+instantiation (`AuditLog` model exists but is not yet written) remain future
+phase work.

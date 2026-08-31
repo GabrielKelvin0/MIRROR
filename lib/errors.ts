@@ -8,7 +8,7 @@ export class AppError extends Error {
   constructor(
     public code: string,
     public statusCode: number,
-    message: string,
+    message: string
   ) {
     super(message);
     this.name = "AppError";
@@ -36,7 +36,7 @@ export class NotFoundError extends AppError {
 export class ValidationError extends AppError {
   constructor(
     message: string = "Validation failed",
-    public fields?: Record<string, string>,
+    public fields?: Record<string, string>
   ) {
     super("VALIDATION_ERROR", 400, message);
   }
@@ -52,4 +52,21 @@ export class ConflictError extends AppError {
   constructor(message: string = "Resource already exists") {
     super("CONFLICT", 409, message);
   }
+}
+
+/**
+ * Convert an unknown thrown value into a SAFE, user-facing message.
+ *
+ * `AppError` messages are written to be shown to users, so they pass through.
+ * Any other error (database/provider/runtime) is never surfaced verbatim —
+ * its internal details (query text, stack traces, file paths) may reveal
+ * internals to a client. Those always collapse to a generic fallback. This is
+ * the Phase 13 security boundary for server-action/API error handling: never
+ * leak internals to the browser.
+ */
+export function safeErrorMessage(err: unknown, fallback: string = "Something went wrong"): string {
+  if (err instanceof AppError) {
+    return err.message;
+  }
+  return fallback;
 }

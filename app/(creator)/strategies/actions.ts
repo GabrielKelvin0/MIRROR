@@ -6,6 +6,7 @@ import { requireRole } from "@/lib/auth/session";
 import { strategyRepository } from "@/lib/db";
 import { followRepository } from "@/lib/db/repositories/follow-repository";
 import { ensureCreatorProfile } from "@/lib/db/repositories/strategy-repository";
+import { safeErrorMessage } from "@/lib/errors";
 import type { StrategyStatus } from "@prisma/client";
 
 /**
@@ -175,8 +176,5 @@ export function deleteAllocation(
 }
 
 function messageOf(err: unknown): string {
-  if (err instanceof Error) {
-    return err.message;
-  }
-  return "Something went wrong";
+  return safeErrorMessage(err);
 }

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth/session";
 import { followRepository, notificationRepository } from "@/lib/db";
+import { safeErrorMessage } from "@/lib/errors";
 import { validateFollowInput } from "@/lib/services/following-rules";
 
 /**
@@ -72,8 +73,5 @@ export function markNotificationRead(
 }
 
 function messageOf(err: unknown): string {
-  if (err instanceof Error) {
-    return err.message;
-  }
-  return "Something went wrong";
+  return safeErrorMessage(err);
 }

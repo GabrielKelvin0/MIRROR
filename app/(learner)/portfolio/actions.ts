@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth/session";
 import { portfolioRepository } from "@/lib/db";
+import { safeErrorMessage } from "@/lib/errors";
 import {
   validatePortfolioInput,
   validateAllocationInput,
@@ -26,10 +27,7 @@ async function getLearnerId(): Promise<string> {
 }
 
 function messageOf(err: unknown): string {
-  if (err instanceof Error) {
-    return err.message;
-  }
-  return "Something went wrong";
+  return safeErrorMessage(err);
 }
 
 /** Create a new paper portfolio with simulated starting capital. */

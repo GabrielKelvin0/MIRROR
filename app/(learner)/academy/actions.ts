@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth/session";
 import { academyRepository } from "@/lib/db";
+import { safeErrorMessage } from "@/lib/errors";
 import {
   validateProgressInput,
   nextCompletionState,
@@ -26,10 +27,7 @@ async function getLearnerId(): Promise<string> {
 }
 
 function messageOf(err: unknown): string {
-  if (err instanceof Error) {
-    return err.message;
-  }
-  return "Something went wrong";
+  return safeErrorMessage(err);
 }
 
 /** Mark a lesson complete or incomplete (scoped to the caller's own progress). */

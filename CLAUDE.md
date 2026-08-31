@@ -309,6 +309,9 @@ npm run format
 - Server-side authorization (requireRole) checks the local database User.role — never client state
 - Prisma client, repositories, authorization, and session resolution are server-only
 - Secrets (CLERK_SECRET_KEY, DATABASE_URL) are never exposed to browser code
+- Server-action errors are sanitized via safeErrorMessage (lib/errors.ts): intentional
+  AppError messages pass through; all other error internals collapse to a generic
+  fallback, so query text/stack traces/file paths never leak to a client (Phase 13).
 
 ---
 
@@ -319,7 +322,8 @@ npm run format
 - Browser testing
 - Responsive design (Phase 19)
 - Accessibility (Phase 19)
-- Security audit (Phase 18)
+- Live penetration testing / deployed-environment audit beyond static review (Phase 13
+  performed a comprehensive static audit; runtime/browser testing is still pending)
 
 ---
 

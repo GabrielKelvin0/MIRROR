@@ -17,7 +17,7 @@ export function SectionHeading({
   return (
     <div className={`max-w-2xl ${alignCls} ${className}`}>
       {eyebrow ? (
-        <p className="text-xs font-semibold uppercase tracking-widest text-emerald-600 mb-3">
+        <p className="text-xs font-semibold uppercase tracking-widest text-emerald-700 mb-3">
           {eyebrow}
         </p>
       ) : null}

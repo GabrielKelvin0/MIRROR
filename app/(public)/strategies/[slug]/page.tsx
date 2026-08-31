@@ -35,7 +35,7 @@ export default async function StrategyDetailPage({ params }: Props) {
       <p className="mb-8">
         <Link
           href="/strategies"
-          className="text-sm font-medium text-emerald-600 hover:text-emerald-700"
+          className="text-sm font-medium text-emerald-700 hover:text-emerald-800"
         >
           ← All strategies
         </Link>

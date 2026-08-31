@@ -34,7 +34,7 @@ export default async function EditStrategyPage({ params }: Props) {
           <p className="mt-2 text-sm text-neutral-600">{err.message}</p>
           <Link
             href="/creator/dashboard"
-            className="mt-4 inline-block text-sm font-medium text-emerald-600 hover:text-emerald-700"
+            className="mt-4 inline-block text-sm font-medium text-emerald-700 hover:text-emerald-800"
           >
             ← Back to your strategies
           </Link>

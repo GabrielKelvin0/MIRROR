@@ -82,9 +82,11 @@ export default async function SubscriptionPage() {
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-neutral-200 text-neutral-500">
-                <th className="py-2 pr-4 font-medium">Feature</th>
+                <th scope="col" className="py-2 pr-4 font-medium">
+                  Feature
+                </th>
                 {KNOWN_PLANS.map((plan) => (
-                  <th key={plan} className="py-2 px-4 font-medium">
+                  <th key={plan} scope="col" className="py-2 px-4 font-medium">
                     {PLAN_LABELS[plan] ?? plan}
                   </th>
                 ))}

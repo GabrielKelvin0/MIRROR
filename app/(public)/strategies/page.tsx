@@ -79,6 +79,7 @@ export default async function StrategiesPage({ searchParams }: Props) {
 
           {results.length > 0 ? (
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              <h2 className="sr-only">Available strategies</h2>
               {results.map((strategy) => (
                 <StrategyCard key={strategy.slug} strategy={strategy} />
               ))}

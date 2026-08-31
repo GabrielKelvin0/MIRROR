@@ -675,3 +675,33 @@ CLAUDE.md): live browser testing, rate limiting on server actions (Clerk guards
 auth; there is no unauthenticated brute-force surface), and audit-log
 instantiation (`AuditLog` model exists but is not yet written) remain future
 phase work.
+
+**Phase 14:** Responsive & Accessibility audit — performed statically (no browser
+available in this container; verified via typecheck/eslint/tests). Reviewed all
+pages/components against 320–1920px widths for overflow/clipping, touch targets,
+keyboard/focus, labels, semantics, heading hierarchy, table/chart accessibility,
+error messaging, typography, and contrast.
+
+Fixed within scope (all low-risk class-only changes):
+- Contrast: darkened small text that failed WCAG AA on light backgrounds —
+  `text-emerald-600` eyebrows/categories/text links → `text-emerald-700`,
+  white-on-`emerald-500` CTA button → `emerald-600`, `text-neutral-400`
+  notification timestamps → `text-neutral-500`, footer disclaimer
+  `text-neutral-500` → `text-neutral-600`, archived status badge
+  `text-neutral-500`→`text-neutral-600`.
+- Navigation: added "Skip to main content" links (with `id="main"`) to the
+  public, learner, and creator layouts for keyboard/screen-reader users.
+- Table accessibility: added `scope="col"` to the subscription plan-comparison
+  table headers.
+- Heading hierarchy: added an sr-only `<h2>` on the strategy discovery page to
+  stop the h1→h3 skip.
+- Error messaging: made the PortfolioAllocationManager remove-action error
+  visibly rendered (it was `sr-only`, invisible to sighted users).
+- Responsive/overflow: portfolio-list metric `dl` now stacks on mobile
+  (`grid-cols-1 sm:grid-cols-3`), StrategyCard largest-allocation value
+  truncates, creator-dashboard strategy name truncates (`min-w-0`).
+- Touch targets: added modest hit-area padding to text-only action buttons
+  (Remove, Mark as read/unread).
+
+Known not-verifiable here (browser-only, as elsewhere): empirical 320px–1920px
+visual confirmation and screen-reader testing remain pending.

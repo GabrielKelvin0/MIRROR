@@ -94,7 +94,7 @@ function DeleteAllocationButton({
       <button
         type="submit"
         disabled={pending}
-        className="text-xs font-medium text-red-600 transition hover:text-red-700 disabled:opacity-50"
+        className="inline-block px-2 py-1 -mx-2 -my-1 text-xs font-medium text-red-600 transition hover:text-red-700 disabled:opacity-50"
       >
         Remove
       </button>

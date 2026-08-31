@@ -28,7 +28,7 @@ export function StrategyCard({ strategy }: { strategy: StrategyBlueprintData }) 
       className="flex flex-col rounded-xl border border-neutral-200 bg-white p-6 transition hover:border-neutral-300 hover:shadow-sm focus-visible:outline-2 focus-visible:outline-emerald-600"
     >
       <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold uppercase tracking-widest text-emerald-600">
+        <span className="text-xs font-semibold uppercase tracking-widest text-emerald-700">
           {strategy.category}
         </span>
         <span className="rounded-md border border-neutral-200 px-2 py-0.5 text-xs text-neutral-500">
@@ -61,9 +61,9 @@ export function StrategyCard({ strategy }: { strategy: StrategyBlueprintData }) 
           <span>{strategy.timeHorizon}</span>
         </div>
         {firstLine ? (
-          <div className="mt-3 flex items-center justify-between">
-            <span className="font-medium text-neutral-700">Largest allocation</span>
-            <span>
+          <div className="mt-3 flex items-center justify-between gap-2">
+            <span className="shrink-0 font-medium text-neutral-700">Largest allocation</span>
+            <span className="min-w-0 truncate text-right">
               {firstLine.assetClass} · {firstLine.weight}%
             </span>
           </div>

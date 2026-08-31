@@ -41,7 +41,7 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-12 space-y-3 border-t border-neutral-200 pt-8 text-xs leading-relaxed text-neutral-500">
+        <div className="mt-12 space-y-3 border-t border-neutral-200 pt-8 text-xs leading-relaxed text-neutral-600">
           <p>
             <strong className="text-neutral-600">Educational purposes only.</strong> MIRROR is an
             investment education and strategy-transparency platform. Nothing on this website is

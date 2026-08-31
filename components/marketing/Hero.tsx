@@ -5,7 +5,7 @@ export function Hero() {
     <section className="relative overflow-hidden">
       <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 sm:py-28 lg:py-32">
         <div className="mx-auto max-w-3xl text-center">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-600">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">
             Investment education, through transparency
           </p>
           <h1 className="mt-5 text-4xl font-semibold leading-tight tracking-tight text-neutral-900 sm:text-5xl lg:text-6xl">
@@ -39,7 +39,7 @@ export function Hero() {
               { label: "Education", value: "Not execution, not hype" },
             ].map((item) => (
               <div key={item.label} className="bg-white p-6">
-                <p className="text-xs font-semibold uppercase tracking-widest text-emerald-600">
+                <p className="text-xs font-semibold uppercase tracking-widest text-emerald-700">
                   {item.label}
                 </p>
                 <p className="mt-2 text-sm text-neutral-600">{item.value}</p>

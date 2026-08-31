@@ -71,7 +71,7 @@ export default async function PortfolioListPage() {
                     {portfolio.description ? (
                       <p className="mt-1 text-sm text-neutral-600">{portfolio.description}</p>
                     ) : null}
-                    <dl className="mt-4 grid grid-cols-3 gap-4 text-sm">
+                    <dl className="mt-4 grid grid-cols-1 gap-4 text-sm sm:grid-cols-3">
                       <div>
                         <dt className="text-neutral-500">Starting capital</dt>
                         <dd className="font-medium text-neutral-900">

@@ -89,7 +89,7 @@ export default function HomePage() {
           <div className="mt-10 text-center">
             <Link
               href="/strategies"
-              className="text-sm font-medium text-emerald-600 hover:text-emerald-700"
+              className="text-sm font-medium text-emerald-700 hover:text-emerald-800"
             >
               View all strategies →
             </Link>

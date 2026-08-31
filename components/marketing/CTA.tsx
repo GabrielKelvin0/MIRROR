@@ -15,7 +15,7 @@ export function CTA() {
         <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Link
             href="/strategies"
-            className="w-full rounded-lg bg-emerald-500 px-6 py-3 text-center font-medium text-white transition hover:bg-emerald-400 sm:w-auto"
+            className="w-full rounded-lg bg-emerald-600 px-6 py-3 text-center font-medium text-white transition hover:bg-emerald-700 sm:w-auto"
           >
             Browse Strategies
           </Link>

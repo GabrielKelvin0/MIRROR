@@ -40,7 +40,7 @@ export default async function PreviewStrategyPage({ params }: Props) {
           <p className="mt-2 text-sm text-neutral-600">{err.message}</p>
           <Link
             href="/creator/dashboard"
-            className="mt-4 inline-block text-sm font-medium text-emerald-600 hover:text-emerald-700"
+            className="mt-4 inline-block text-sm font-medium text-emerald-700 hover:text-emerald-800"
           >
             ← Back to your strategies
           </Link>
@@ -69,7 +69,7 @@ export default async function PreviewStrategyPage({ params }: Props) {
       ) : null}
 
       <article className="mt-6 rounded-2xl border border-neutral-200 bg-white p-6 sm:p-8">
-        <span className="text-xs font-semibold uppercase tracking-widest text-emerald-600">
+        <span className="text-xs font-semibold uppercase tracking-widest text-emerald-700">
           Strategy blueprint preview
         </span>
         <h1 className="mt-2 text-3xl font-semibold text-neutral-900">{strategy.name}</h1>
@@ -147,7 +147,7 @@ export default async function PreviewStrategyPage({ params }: Props) {
       <div className="mt-4 text-center">
         <Link
           href={`/creator/dashboard/strategies/${id}/edit`}
-          className="text-sm font-medium text-emerald-600 hover:text-emerald-700"
+          className="text-sm font-medium text-emerald-700 hover:text-emerald-800"
         >
           Back to editing →
         </Link>

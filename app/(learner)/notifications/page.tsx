@@ -61,13 +61,13 @@ export default async function NotificationsPage() {
                     />
                     <p className="font-medium text-neutral-900">{notification.title}</p>
                     {notification.strategyUpdate ? (
-                      <span className="text-xs text-neutral-400">
+                      <span className="text-xs text-neutral-500">
                         {formatDate(notification.createdAt)}
                       </span>
                     ) : null}
                   </div>
                   <p className="mt-1 text-sm text-neutral-600">{notification.message}</p>
-                  <p className="mt-1 text-xs text-neutral-400">{unread ? "Unread" : "Read"}</p>
+                  <p className="mt-1 text-xs text-neutral-500">{unread ? "Unread" : "Read"}</p>
                 </div>
                 <MarkReadButton notificationId={notification.id} unread={unread} />
               </li>

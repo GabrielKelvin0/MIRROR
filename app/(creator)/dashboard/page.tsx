@@ -14,7 +14,7 @@ function StatusBadge({ status }: { status: StrategyStatus }) {
     status === "PUBLISHED"
       ? "bg-emerald-50 text-emerald-700"
       : status === "ARCHIVED"
-        ? "bg-neutral-100 text-neutral-500"
+        ? "bg-neutral-100 text-neutral-600"
         : "bg-amber-50 text-amber-700";
   return (
     <span className={`rounded-md px-2 py-0.5 text-xs font-medium ${tone}`}>
@@ -61,9 +61,9 @@ export default async function CreatorDashboardPage() {
           {strategies.map((s) => (
             <li key={s.id} className="rounded-xl border border-neutral-200 bg-white p-5">
               <div className="flex items-center justify-between gap-4">
-                <div>
+                <div className="min-w-0">
                   <div className="flex items-center gap-3">
-                    <h2 className="font-semibold text-neutral-900">{s.name}</h2>
+                    <h2 className="truncate font-semibold text-neutral-900">{s.name}</h2>
                     <StatusBadge status={s.status} />
                   </div>
                   <p className="mt-1 text-sm text-neutral-500">
@@ -75,7 +75,7 @@ export default async function CreatorDashboardPage() {
                 <div className="flex shrink-0 items-center gap-3">
                   <Link
                     href={`/creator/dashboard/strategies/${s.id}/edit`}
-                    className="text-sm font-medium text-emerald-600 hover:text-emerald-700"
+                    className="text-sm font-medium text-emerald-700 hover:text-emerald-800"
                   >
                     Edit
                   </Link>

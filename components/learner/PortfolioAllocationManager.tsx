@@ -51,14 +51,14 @@ function AllocationRow({
           <button
             type="submit"
             disabled={pending}
-            className="text-sm text-red-600 hover:text-red-800 disabled:opacity-50"
+            className="inline-block px-2 py-1 -mx-2 -my-1 text-sm text-red-600 hover:text-red-800 disabled:opacity-50"
           >
             {pending ? "Removing…" : "Remove"}
           </button>
           {state.error ? (
-            <span className="sr-only" role="alert">
+            <p className="mt-1 text-xs text-red-600" role="alert">
               {state.error}
-            </span>
+            </p>
           ) : null}
         </form>
       </div>

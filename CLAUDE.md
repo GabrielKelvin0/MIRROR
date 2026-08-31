@@ -301,6 +301,21 @@ npm run format
   It compiles, typechecks, and is unit-tested (121 total tests). DB-backed state
   was NOT runtime-executed here (no DB). The `Strategy` schema has no price field
   yet, so all strategies are treated as free for entitlement purposes.
+- Phase 13 (Security Audit) performed a comprehensive static audit: middleware,
+  all server actions, all repositories (ownership/IDOR at boundary), DB queries
+  (Prisma parameterised only), XSS (none), secrets (server-only enforced), CSRF
+  (server actions), mass assignment (explicit whitelists). One high-impact fix:
+  server actions now sanitize errors via `safeErrorMessage` in lib/errors.ts
+  (unit-tested in errors.test.ts) so only intentional AppError messages reach
+  clients; unexpected internals collapse to a generic message. 126 total tests.
+  See CLAUDE.md "Security Boundaries" below.
+- Phase 14 (Responsive & Accessibility) performed a static audit and class-only
+  fixes: contrast on small text/CTA (emerald-600→700 etc.), "Skip to main
+  content" links in all three layouts, `scope="col"` on the subscription table,
+  an sr-only `<h2>` to fix an h1→h3 skip on /strategies, making the
+  PortfolioAllocationManager remove-error visibly rendered, responsive grids/
+  truncation for narrow widths, and touch-target padding on text buttons.
+  Browser/Rendering verification is still pending (no browser in this container).
 
 ## Security Boundaries (implemented)
 

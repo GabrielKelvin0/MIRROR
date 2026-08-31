@@ -610,3 +610,40 @@ breakdown and a method-and-basis disclosure. Everything is clearly hypothetical
 and educational — never a claim of real results or a guarantee. The panel is
 not DB-backed and requires no migrations; a future phase may source a real time
 series from a data provider when one is configured.
+
+**Phase 12:** Modular subscription / entitlement architecture — implemented
+(comes in three cleanly-separated concerns, as the phase requires; the DB-backed
+state cannot be runtime-executed in this container, so verification relied on
+typecheck, unit tests, and lint).
+
+1. **Product entitlement** — `lib/services/entitlement-rules.ts` (pure,
+   deterministic, unit-tested in `entitlement-rules.test.ts`): a feature catalog
+   (`FEATURES`), a `FEATURE_MATRIX` mapping each plan
+   (FREE / PRO_LEARNER / PREMIUM_CREATOR) to its granted features, helpers
+   (`isPlanEntitled`, `featuresForPlan`, `isAtLeast`, `assertKnownPlan`), and a
+   `strategyAccess` rule that decides paid-strategy access from a plan + held
+   strategy-subscription state + strategy pricing. Business logic lives here,
+   never in a provider.
+
+2. **Subscription state** — `lib/db/repositories/subscription-repository.ts`
+   (server-only, wired into `lib/db`): persists a user's `Subscription` row and
+   its `Entitlement` rows from the pure feature matrix, records/revokes held
+   "paid strategy subscription" state (as an `Entitlement` with feature key
+   `strategy:<id>` on the user's own active subscription — matching the existing
+   Phase 3 schema, no fabricated model), and exposes a
+   `learnerEntitlementSummary` + an `assertCanAccessStrategy` access gate.
+
+3. **Payment provider** — `lib/payments/provider.ts` (server-only): a narrow
+   `PaymentProvider` CONTRACT (start/cancel a strategy subscription) with NO
+   business/entitlement logic inside it. `getPaymentProvider()` currently always
+   returns an unconfigured stub that refuses every operation, enforcing the
+   "do not activate real payments without required environment configuration"
+   guardrail. Selecting a real provider (e.g. Stripe) happens only here, based
+   on env config.
+
+Learner UI: a read-only subscription/entitlement status page under
+`/learner/subscription` shows the user's plan and granted features plus a
+plan-comparison table derived purely from the rules, and is linked from the
+learner dashboard. No payments are charged anywhere. The `Strategy` schema has no
+price field yet, so all strategies are treated as free for entitlement purposes;
+the `strategyAccess` rule already supports pricing when a price is configured.

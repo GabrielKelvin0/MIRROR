@@ -149,7 +149,8 @@ MIRROR is built in phases. Current status:
 - ✅ **Phase 9:** Paper Portfolio (hypothetical virtual portfolios with simulated capital, strategy allocations, manual decisions, and deterministic performance vs a sample benchmark)
 - ✅ **Phase 10:** Academy (structured learning paths, courses, lessons, completion progress; DB-backed progress pending runtime verification)
 - ✅ **Phase 11:** Performance & Risk (historical/period return, max drawdown, recovery, annualised volatility, benchmark comparison, allocation, correlation over a clearly-marked seed/demo series with explicit period and data basis)
-- ⏳ **Phase 12+:** Feature implementation
+- ✅ **Phase 12:** Modular subscription/entitlement architecture (separate product entitlement rules from subscription state and payment-provider implementation; Free/Pro/Creator plans; payments not activated)
+- ⏳ **Phase 13+:** Feature implementation
 
 Phase work is tracked in MIRROR_MASTER_PROMPT.md (Phases 0–17); product
 requirements are sourced from MIRROR_SPEC.md.

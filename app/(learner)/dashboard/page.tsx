@@ -37,6 +37,14 @@ export default function LearnerDashboard() {
             Strategy updates will appear here (Phase 11)
           </p>
         </div>
+
+        <a
+          href="/learner/subscription"
+          className="block border border-neutral-200 rounded-lg p-6 bg-white hover:border-emerald-300 transition"
+        >
+          <h2 className="font-semibold text-neutral-900">Subscription &amp; entitlements</h2>
+          <p className="text-neutral-600 text-sm mt-2">View your plan and the features it grants</p>
+        </a>
       </div>
     </div>
   );

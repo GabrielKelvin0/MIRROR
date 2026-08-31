@@ -285,6 +285,22 @@ npm run format
   components/learner/) on the paper portfolio detail page. It compiles,
   typechecks, and is unit-tested (107 total tests). Everything is hypothetical
   and educational only.
+- Phase 12 (Modular subscription/entitlement architecture) separates three
+  concerns, per the phase: (1) PRODUCT ENTITLEMENT — pure rules in
+  lib/services/entitlement-rules.ts (feature catalog + FEATURE_MATRIX mapping
+  FREE/PRO_LEARNER/PREMIUM_CREATOR to features + a paid-strategy `strategyAccess`
+  rule; unit-tested in entitlement-rules.test.ts); (2) SUBSCRIPTION STATE —
+  lib/db/repositories/subscription-repository.ts (server-only, wired into
+  lib/db), persists Subscription/Entitlement rows, records held strategy
+  subscriptions as an `Entitlement` with feature `strategy:<id>`, exposes
+  `learnerEntitlementSummary` + `assertCanAccessStrategy`; (3) PAYMENT PROVIDER —
+  lib/payments/provider.ts, a narrow `PaymentProvider` contract with NO business
+  logic; `getPaymentProvider()` always returns an unconfigured stub that refuses
+  all operations, so NO real payments can run (guardrail satisfied). The read-only
+  learner UI is /learner/subscription (plan + granted features + comparison).
+  It compiles, typechecks, and is unit-tested (121 total tests). DB-backed state
+  was NOT runtime-executed here (no DB). The `Strategy` schema has no price field
+  yet, so all strategies are treated as free for entitlement purposes.
 
 ## Security Boundaries (implemented)
 

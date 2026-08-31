@@ -705,3 +705,33 @@ Fixed within scope (all low-risk class-only changes):
 
 Known not-verifiable here (browser-only, as elsewhere): empirical 320px–1920px
 visual confirmation and screen-reader testing remain pending.
+
+**Phase 15:** Performance — measured statically (no live DB / `next build`
+available in this container; verified via typecheck/eslint/tests). Audited all
+repositories for N+1 loops, relation over-fetching, and repeated queries; audited
+server actions for revalidate breadth; audited client components for unnecessary
+client work and client-only dependencies.
+
+Findings: the DB layer was already efficient (no N+1 loops; batched `createMany`
+notification fan-out; scoped includes; `take` limits on related reads; scoped
+`revalidatePath` calls; 14 lean client components, none pulling a heavy
+dependency). Three real, non-speculative contributors were found and fixed:
+
+1. Duplicate query — the paper-portfolio detail page called `getOwned` (a heavy
+   `findUnique` with strategies→strategy + positions + events) and then
+   `performanceSummary(id, userId)`, which called the SAME `getOwned` again.
+   Fixed: `performanceSummary` now accepts the already-loaded portfolio
+   (pure compute, no second query). Before: 2× identical heavy queries.
+   After: 1×.
+2. Serial waterfall — `getOwned` and the public `listPublished` ran one after the
+   other; they are independent. Fixed: fetched them in `Promise.all` on the
+   portfolio detail page (ownership still enforced inside `getOwned`).
+   Before: serial. After: parallel.
+3. Repeated ownership queries — the creator edit and preview pages each issued
+   `getOwned` + `listAllocations` + `listUpdates`, where the latter two each
+   re-ran the ownership `findUnique` (5 queries total). Fixed: added a single
+   ownership-checked `getOwnedDetail` (strategy + allocations + updates in one
+   query) and used it on both pages. Before: 5 queries. After: 1.
+
+No browser/Lighthouse measurements are possible here; the above are query-count
+reductions on hot pages, verifiable by code review.

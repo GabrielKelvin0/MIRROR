@@ -13,7 +13,7 @@
 
 import "server-only";
 import { prisma } from "@/lib/db";
-import type { PaperPortfolio, Strategy } from "@prisma/client";
+import type { PaperPortfolio, Prisma, Strategy } from "@prisma/client";
 import { ForbiddenError, NotFoundError } from "@/lib/errors";
 import {
   assertAllocationTotal,
@@ -31,6 +31,15 @@ function bucketForRisk(risk: Strategy["riskProfile"] | null): string {
   if (risk === "MODERATE") return "Moderate Bucket";
   return "Conservative Bucket";
 }
+
+/** The shape returned by `getOwned`: a portfolio with strategies→strategy, positions, and events. */
+type OwnedPortfolioDetail = Prisma.PaperPortfolioGetPayload<{
+  include: {
+    strategies: { include: { strategy: true } };
+    positions: true;
+    events: { orderBy: { createdAt: "desc" } };
+  };
+}>;
 
 async function ownedPortfolio(id: string, userId: string) {
   const portfolio = await prisma.paperPortfolio.findUnique({
@@ -72,7 +81,7 @@ export class PortfolioRepository {
   }
 
   /** Get one of the user's portfolios with allocations, positions, and events. */
-  async getOwned(id: string, userId: string) {
+  async getOwned(id: string, userId: string): Promise<OwnedPortfolioDetail> {
     const portfolio = await prisma.paperPortfolio.findUnique({
       where: { id },
       include: {
@@ -232,9 +241,14 @@ export class PortfolioRepository {
     });
   }
 
-  /** Deterministic performance summary presented to the learner (hypothetical). */
-  async performanceSummary(id: string, userId: string) {
-    const portfolio = await this.getOwned(id, userId);
+  /**
+   * Deterministic performance summary presented to the learner (hypothetical).
+   *
+   * Accepts the already-loaded owned portfolio (from `getOwned`, which includes
+   * strategies + their strategy rows) so the detail page does not run the same
+   * heavy ownership query twice per render.
+   */
+  async performanceSummary(portfolio: OwnedPortfolioDetail) {
     const returnPct = portfolioReturn(portfolio.currentValue, portfolio.startingCapital);
     const blended = blendedAnnualReturn(
       portfolio.strategies.map((s) => ({

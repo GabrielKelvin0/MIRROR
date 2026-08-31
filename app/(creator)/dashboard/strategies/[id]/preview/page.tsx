@@ -29,9 +29,10 @@ export default async function PreviewStrategyPage({ params }: Props) {
   let allocations;
   let updates;
   try {
-    strategy = await strategyRepository.getOwned(id, user.id);
-    allocations = await strategyRepository.listAllocations(id, user.id);
-    updates = await strategyRepository.listUpdates(id, user.id);
+    const detail = await strategyRepository.getOwnedDetail(id, user.id);
+    strategy = detail;
+    allocations = detail.allocations;
+    updates = detail.updates;
   } catch (err) {
     if (err instanceof AppError) {
       return (

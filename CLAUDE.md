@@ -316,6 +316,16 @@ npm run format
   PortfolioAllocationManager remove-error visibly rendered, responsive grids/
   truncation for narrow widths, and touch-target padding on text buttons.
   Browser/Rendering verification is still pending (no browser in this container).
+- Phase 15 (Performance) measured statically (no live DB/build/browser here).
+  DB layer already efficient (no N+1 loops, batched createMany fan-out, scoped
+  includes, `take` limits, scoped revalidatePath). Fixed three real contributors:
+  (1) portfolio detail page double-fetched `getOwned` (performanceSummary now
+  takes the loaded portfolio — 2 heavy queries → 1); (2) serial `getOwned` +
+  `listPublished` now run in `Promise.all` (ownership still enforced);
+  (3) creator edit/preview pages ran 5 queries across getOwned+listAllocations+
+  listUpdates with repeated ownership checks — replaced by a single
+  ownership-checked `getOwnedDetail` (5 → 1). Query-count reductions verifiable
+  by code review; no runtime/WASR measurements available here.
 
 ## Security Boundaries (implemented)
 

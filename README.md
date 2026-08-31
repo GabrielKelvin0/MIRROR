@@ -152,7 +152,8 @@ MIRROR is built in phases. Current status:
 - ✅ **Phase 12:** Modular subscription/entitlement architecture (separate product entitlement rules from subscription state and payment-provider implementation; Free/Pro/Creator plans; payments not activated)
 - ✅ **Phase 13:** Security audit (audited middleware, auth, all server actions, repositories, DB queries, error handling; fixed error-message leakage to clients; no SQL-injection/XSS/IDOR/mass-assignment issues found)
 - ✅ **Phase 14:** Responsive & accessibility audit (fixed contrast failures on small text/CTA buttons, added skip-to-content links and table `scope`, fixed a sr-only-only error display, responsive grids/narrow-width overflow, touch targets, heading hierarchy)
-- ⏳ **Phase 15+:** Feature implementation
+- ✅ **Phase 15:** Performance (removed duplicate DB query on the paper-portfolio detail page and parallelized its independent queries; collapsed the creator edit/preview pages from 5 queries to 1 via a single ownership-checked detail read; no N+1 loops found elsewhere)
+- ⏳ **Phase 16+:** Feature implementation
 
 Phase work is tracked in MIRROR_MASTER_PROMPT.md (Phases 0–17); product
 requirements are sourced from MIRROR_SPEC.md.

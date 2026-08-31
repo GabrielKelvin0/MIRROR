@@ -87,6 +87,28 @@ export class StrategyRepository {
     return ownedStrategy(id, creatorId);
   }
 
+  /**
+   * Get one of the caller's strategies (ownership-checked) with its allocations
+   * and updates in a single query. Keeps the creator edit page to one ownership
+   * query instead of re-checking ownership once per collection (N+1 avoidance).
+   */
+  async getOwnedDetail(id: string, creatorId: string) {
+    const strategy = await prisma.strategy.findUnique({
+      where: { id },
+      include: {
+        allocations: true,
+        updates: { orderBy: { effectiveDate: "desc" } },
+      },
+    });
+    if (!strategy) {
+      throw new NotFoundError("Strategy not found");
+    }
+    if (strategy.creatorId !== creatorId) {
+      throw new ForbiddenError("You do not own this strategy");
+    }
+    return strategy;
+  }
+
   /** Edit strategy fields (ownership-checked). */
   async update(id: string, creatorId: string, input: StrategyInput) {
     await ownedStrategy(id, creatorId);

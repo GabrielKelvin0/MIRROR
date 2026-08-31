@@ -23,15 +23,19 @@ export default async function PortfolioDetailPage({ params }: { params: { id: st
   const user = await requireRole("LEARNER");
   const { id } = await params;
 
-  let portfolio;
-  try {
-    portfolio = await portfolioRepository.getOwned(id, user.id);
-  } catch {
+  // Fetch the (ownership-checked) portfolio and the public published-strategy
+  // list concurrently — they are independent, so running them in parallel avoids
+  // a serial DB waterfall on this page.
+  const [owned, published] = await Promise.all([
+    portfolioRepository.getOwned(id, user.id).catch(() => null),
+    strategyRepository.listPublished(),
+  ]);
+  if (!owned) {
     notFound();
   }
+  const portfolio = owned;
 
-  const summary = await portfolioRepository.performanceSummary(id, user.id);
-  const published = await strategyRepository.listPublished();
+  const summary = await portfolioRepository.performanceSummary(portfolio);
   const allocatedIds = new Set(portfolio.strategies.map((s) => s.strategyId));
   const availableStrategies = published.filter((s) => !allocatedIds.has(s.id));
 

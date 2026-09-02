@@ -518,7 +518,7 @@ export class ValidationError extends AppError {
 
 ## Next Steps
 
-**Phase 3:** Database schema — implemented (validated; migrations pending)
+**Phase 3:** Database schema — implemented (validated; initial migration applied to Neon Postgres)
 
 **Phase 4 / 4.5:** Authentication, authorization, and stabilization — implemented
 
@@ -529,9 +529,11 @@ and `npm run lint`.)
 
 **Phase 6:** Strategy Creator workflow — implemented (draft, edit, allocations,
 updates, owner-gated preview/publish/archive; see the Creator Application
-boundary above). DB-backed: requires migrations + a live PostgreSQL, which are
-not available in this container (missing OpenSSL and `DATABASE_URL`), so runtime
-was not executed here; verification relied on typecheck, unit tests, and lint.
+boundary above). DB-backed and connected to a live Neon Postgres project: migrations are
+applied and runtime data-layer paths were verified here via Prisma probes.
+Interactive browser flows remain unverified in this container (`next`/SWC
+crashes with SIGBUS); static verification relied on typecheck, unit tests,
+and lint.
 
 **Phase 7:** Strategy Discovery — implemented over the same typed sample-data
 boundary as Phase 5 (library-driven, no DB required, runtime-verifiable here).
@@ -555,10 +557,9 @@ error, and empty states. Notification payloads are safe (display-only title +
 message; no emails or other sensitive data), and notifications are only ever
 scoped to the authenticated user's own rows.
 
-**Phase 9:** Paper Portfolio — implemented (DB-backed, like Phase 6/8;
-requires migrations + a live PostgreSQL, not available in this container, so
-runtime was not executed here; verification relied on typecheck, unit tests,
-and lint). Learners create purely hypothetical virtual portfolios with
+**Phase 9:** Paper Portfolio — implemented (DB-backed, like Phase 6/8; live Neon database with migrations applied and
+runtime data-layer paths verified via Prisma probes; interactive browser flows
+remain unverified in this container because `next`/SWC crashes with SIGBUS). Learners create purely hypothetical virtual portfolios with
 simulated starting capital, allocate PUBLISHED strategies (with the total
 capped at 100%), record manual decisions, and view deterministic performance
 plus an illustrative sample benchmark. All figures are clearly labelled
@@ -577,9 +578,8 @@ every read/mutation verifies ownership before touching data. Manual decisions
 are stored as `REBALANCE` portfolio events (the schema's closest existing
 event type) with the decision text in the description.
 
-**Phase 10:** Academy — implemented (DB-backed progress, like Phase 9; requires
-migrations + a live PostgreSQL, not available in this container, so runtime was
-not executed here; verification relied on typecheck, unit tests, and lint).
+**Phase 10:** Academy — implemented (DB-backed progress, like Phase 9; live Neon database with migrations applied
+and runtime data-layer paths verified via Prisma probes).
 Learners follow structured learning paths organized into three levels — Beginner
 (investing basics, stocks vs ETFs, diversification, risk, compound growth,
 portfolio construction), Intermediate (fundamental analysis, valuation, financial
@@ -601,11 +601,13 @@ learner UI is under `/learner/academy` (catalog, course detail with progress bar
 lesson content with complete/incomplete toggle and prev/next navigation) plus a
 client `LessonCompleteButton`. Progress rows are scoped to the authenticated user.
 
-KNOWN LIMITATION — schema FK: `Progress.lessonId` is a foreign key to
-`Lesson.id` (a cuid), but the Academy curriculum is sample data with no real
-`Lesson` rows yet, so progress stores the deterministic `"courseSlug/lessonSlug"`
-key in `lessonId`. When a later phase seeds real `Course`/`Lesson` rows, progress
-must be reconciled to real lesson ids so the FK resolves.
+DESIGN NOTE — lesson identity: `Progress.lessonId` stores the curriculum's
+stable `"courseSlug/lessonSlug"` key and deliberately has no FK to `Lesson.id`
+while the curriculum is typed sample data. The FK was removed by migration
+20260902080805_remove_progress_lesson_fk (constraint-only, non-destructive);
+duplicate completion is prevented by `@@unique([userId, lessonId])`. When a
+later phase seeds real `Course`/`Lesson` rows, progress must be reconciled to
+real lesson ids and the FK restored.
 
 **Phase 11:** Performance & Risk — implemented (no DB dependency; runtime
 verifiable via typecheck/tests/lint in this container). Adds a deterministic
@@ -727,8 +729,8 @@ Fixed within scope (all low-risk class-only changes):
 Known not-verifiable here (browser-only, as elsewhere): empirical 320px–1920px
 visual confirmation and screen-reader testing remain pending.
 
-**Phase 15:** Performance — measured statically (no live DB / `next build`
-available in this container; verified via typecheck/eslint/tests). Audited all
+**Phase 15:** Performance — measured statically (no live app workload; `next build`
+unavailable in this container; verified via typecheck/eslint/tests). Audited all
 repositories for N+1 loops, relation over-fetching, and repeated queries; audited
 server actions for revalidate breadth; audited client components for unnecessary
 client work and client-only dependencies.

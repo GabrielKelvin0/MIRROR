@@ -5,18 +5,21 @@
  * always scoped to the authenticated user; the user id comes from the
  * server-side session and is never supplied by the client as authority.
  *
- * Lesson identity uses a deterministic key — "courseSlug/lessonSlug" — which
- * mirrors the slug keys of the sample curriculum in `lib/data/curriculum.ts`.
- * This keeps progress storable now and directly swappable when the curriculum
- * moves to the database without a redesign.
+ * Lesson identity uses the curriculum's stable natural key —
+ * "courseSlug/lessonSlug" — which mirrors the slug keys of the sample
+ * curriculum in `lib/data/curriculum.ts`. `Progress.lessonId` stores that key
+ * as a plain string and deliberately has NO foreign key to `Lesson.id` while
+ * the curriculum is typed sample data (migration
+ * 20260902080805_remove_progress_lesson_fk dropped the FK). Duplicate
+ * completion for the same user/lesson is prevented by the
+ * `@@unique([userId, lessonId])` constraint.
  *
- * KNOWN LIMITATION (schema-FK): `Progress.lessonId` is a foreign key to
- * `Lesson.id` (a cuid). The sample curriculum has no real `Lesson` rows yet, so
- * progress rows here store the "courseSlug/lessonSlug" key in `lessonId`. When a
- * later phase seeds real `Course`/`Lesson` rows, progress must be reconciled to
- * real lesson ids (or the curriculum seeded) so the FK resolves. This code
- * compiles, typechecks, and is unit-tested but was not runtime-executed here
- * (no database in this container).
+ * FUTURE RECONCILIATION: when a later phase moves the curriculum into the
+ * database (seeded `Course`/`Lesson` rows), progress rows must be reconciled
+ * from slug-pair keys to real `Lesson` ids and the `Lesson` relation/FK can
+ * then be restored. Runtime-verified against the linked Neon database: lesson
+ * completion upserts succeed and duplicate rows are rejected by the unique
+ * constraint.
  */
 
 import "server-only";

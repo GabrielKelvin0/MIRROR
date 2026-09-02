@@ -328,7 +328,6 @@ model Lesson {
 
   // Relationships
   course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  progress Progress[]
 
   @@index([courseId])
   @@unique([courseId, slug])
@@ -344,7 +343,6 @@ model Progress {
 
   // Relationships
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
 
   @@unique([userId, lessonId])
   @@index([userId])

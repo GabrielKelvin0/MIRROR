@@ -222,12 +222,13 @@ npm run format
   `npm run typecheck`, `npm test`, and `npx eslint` for verification.
 - Clerk configuration requires environment variables (NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY, CLERK_SECRET_KEY)
 - Database requires PostgreSQL running locally or remote connection string
-- No database migrations applied yet (schema validated). This container cannot
-  generate or apply migrations: Prisma's schema engine errors without OpenSSL,
-  and there is no `DATABASE_URL`/live PostgreSQL here. Migration SQL must be
-  generated and applied in an environment with a database.
+- Migrations are applied to the linked Neon Postgres project (production
+  branch): `npx prisma validate` and `npx prisma migrate status` pass in this
+  container. `npm run dev`/`npm run build` still cannot run here (`next`/SWC
+  SIGBUS), so interactive runtime verification requires an environment with a
+  working Node/Next runtime.
 - Phase 6 (Strategy Creator) features are DB-backed (Prisma). They compile,
-  typecheck, and are unit-tested, but were NOT runtime-executed here (no DB).
+  typecheck, and are unit-tested, but were not interactively runtime-executed here; live DB-layer paths are verified against the linked Neon database (migrations applied).
 - Role provisioning (assigning CREATOR/ADMIN to existing users) is not yet implemented as a user-facing capability; new users default to LEARNER
 - Local identity is keyed by `clerkId` (the authenticated Clerk subject); see lib/db/repositories/user-repository.ts
 - The public marketing website (Phase 5, extended by Phase 7) is driven by
@@ -240,8 +241,7 @@ npm run format
   return alone; the default sort is by risk. Discovery logic and its unit tests
   live in lib/data/strategies.ts and lib/data/strategies.test.ts.
 - Phase 8 (Following and Notifications) is DB-backed (Prisma `Follow` and
-  `Notification` models). It compiles, typechecks, and is unit-tested, but was
-  NOT runtime-executed here (no DB). Pure rules live in
+  `Notification` models). It compiles, typechecks, and is unit-tested, but was not interactively runtime-executed here; live DB-layer paths are verified against the linked Neon database (migrations applied). Pure rules live in
   lib/services/following-rules.ts (unit-tested in following-rules.test.ts);
   persistence in lib/db/repositories/{follow,notification}-repository.ts;
   actions in app/(learner)/following/actions.ts; learner UI under
@@ -252,8 +252,7 @@ npm run format
   avoid spam; payloads are safe (display-only).
 - Phase 9 (Paper Portfolio) is DB-backed (Prisma `PaperPortfolio`,
   `PaperPortfolioStrategy`, `PaperPosition`, `PortfolioEvent` models). It
-  compiles, typechecks, and is unit-tested, but was NOT runtime-executed here
-  (no DB). Pure deterministic valuation/allocation/decision rules live in
+  compiles, typechecks, and is unit-tested, but was not interactively runtime-executed here; live DB-layer paths are verified against the linked Neon database (migrations applied). Pure deterministic valuation/allocation/decision rules live in
   lib/services/portfolio-rules.ts (unit-tested in portfolio-rules.test.ts);
   ownership-checked persistence in
   lib/db/repositories/portfolio-repository.ts; actions in
@@ -269,17 +268,19 @@ npm run format
   mirror the Prisma `Course`/`Lesson` models so it can be swapped for DB
   records without a redesign), and progress is DB-backed (Prisma `Progress`, +
   `Course`/`Lesson`/`CourseLevel` models from Phase 3). It compiles, typechecks,
-  and is unit-tested, but was NOT runtime-executed here (no DB). Pure
+  and is unit-tested, but was not interactively runtime-executed here; live DB-layer paths are verified against the linked Neon database (migrations applied). Pure
   deterministic rules live in lib/services/academy-rules.ts (unit-tested in
   academy-rules.test.ts); per-user persistence in
   lib/db/repositories/academy-repository.ts; actions in
   app/(learner)/academy/actions.ts; learner UI under /learner/academy (catalog,
   course detail with progress bar, lesson content + complete toggle + prev/next).
   Content is educational only — never personalized advice nor a guarantee.
-  KNOWN LIMITATION (schema FK): `Progress.lessonId` is an FK to `Lesson.id`, but
-  the sample curriculum has no real `Lesson` rows, so progress stores
-  "courseSlug/lessonSlug" in `lessonId`; a later phase must seed real
-  `Course`/`Lesson` rows (or reconcile progress) so the FK resolves.
+  DESIGN NOTE (lesson identity): `Progress.lessonId` stores the curriculum's
+  stable "courseSlug/lessonSlug" key and has no FK to `Lesson.id` while the
+  curriculum is typed sample data (FK dropped by migration
+  20260902080805_remove_progress_lesson_fk; duplicates blocked by
+  `@@unique([userId, lessonId])`). When the curriculum moves to the database,
+  progress must be reconciled to real `Lesson` ids and the FK restored.
 - Phase 11 (Performance & Risk) has no DB dependency. Pure deterministic
   metrics (period return, max drawdown + recovery, annualised volatility,
   benchmark comparison, allocation, correlation) live in
@@ -305,7 +306,8 @@ npm run format
   all operations, so NO real payments can run (guardrail satisfied). The read-only
   learner UI is /learner/subscription (plan + granted features + comparison).
   It compiles, typechecks, and is unit-tested (121 total tests). DB-backed state
-  was NOT runtime-executed here (no DB). The `Strategy` schema has no price field
+  is verified against the linked Neon database via Prisma probes (migrations
+  applied). The `Strategy` schema has no price field
   yet, so all strategies are treated as free for entitlement purposes.
 - Phase 13 (Security Audit) performed a comprehensive static audit: middleware,
   all server actions, all repositories (ownership/IDOR at boundary), DB queries
@@ -322,7 +324,7 @@ npm run format
   PortfolioAllocationManager remove-error visibly rendered, responsive grids/
   truncation for narrow widths, and touch-target padding on text buttons.
   Browser/Rendering verification is still pending (no browser in this container).
-- Phase 15 (Performance) measured statically (no live DB/build/browser here).
+- Phase 15 (Performance) measured statically (no live app workload/build/browser here).
   DB layer already efficient (no N+1 loops, batched createMany fan-out, scoped
   includes, `take` limits, scoped revalidatePath). Fixed three real contributors:
   (1) portfolio detail page double-fetched `getOwned` (performanceSummary now

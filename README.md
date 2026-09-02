@@ -158,7 +158,7 @@ MIRROR is built in phases. Current status:
 - ✅ **Phase 7:** Strategy Discovery (search, filters, risk-forward cards, blueprint detail with creator/performance/updates)
 - ✅ **Phase 8:** Following and Notifications (follow/unfollow, read/unread updates, safe notification payloads, anti-spam)
 - ✅ **Phase 9:** Paper Portfolio (hypothetical virtual portfolios with simulated capital, strategy allocations, manual decisions, and deterministic performance vs a sample benchmark)
-- ✅ **Phase 10:** Academy (structured learning paths, courses, lessons, completion progress; DB-backed progress pending runtime verification)
+- ✅ **Phase 10:** Academy (structured learning paths, courses, lessons, completion progress; DB-backed progress verified against the live Neon Postgres database)
 - ✅ **Phase 11:** Performance & Risk (historical/period return, max drawdown, recovery, annualised volatility, benchmark comparison, allocation, correlation over a clearly-marked seed/demo series with explicit period and data basis)
 - ✅ **Phase 12:** Modular subscription/entitlement architecture (separate product entitlement rules from subscription state and payment-provider implementation; Free/Pro/Creator plans; payments not activated)
 - ✅ **Phase 13:** Security audit (audited middleware, auth, all server actions, repositories, DB queries, error handling; fixed error-message leakage to clients; no SQL-injection/XSS/IDOR/mass-assignment issues found)
@@ -246,10 +246,13 @@ TBD
 
 ## Status
 
-**Phase 4.5 — Stabilization & Reconciliation: COMPLETE**
+**Phases 0–16 COMPLETE; Phase 17 (Final Review) in progress**
 
-Clerk authentication is active, `/learner/*`, `/creator/*`, and `/admin/*` are
-protected by middleware and server-side role authorization, and new users
-default to LEARNER.
-
-Next: Phase 5 — Marketing website (not started)
+Clerk authentication is active (development keys linked to the Clerk
+application), `/learner/*`, `/creator/*`, and `/admin/*` are protected by
+middleware and server-side role authorization, and new users default to
+LEARNER. MIRROR runs on a live Neon Postgres project: the initial migration
+and the Academy progress-FK migration are applied and the schema is up to
+date. Static verification, the automated suite, and live DB-layer probes
+pass. Interactive browser verification requires a machine where the Next.js
+dev server can run — this container's `next`/SWC crashes with SIGBUS.

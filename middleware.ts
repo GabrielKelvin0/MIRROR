@@ -18,6 +18,7 @@ export default clerkMiddleware((auth, req) => {
 
 export const config = {
   // Run on all routes except static assets. Clerk's matcher ignores
-  // files with a dot in the path and Next.js internals.
-  matcher: ["/((?!.*\\..*|_next).*)", "/", "/(api|trpc)(.*)"],
+  // files with a dot in the path and Next.js internals. Includes Clerk's
+  // auto-proxy path so Clerk routes always run through the middleware.
+  matcher: ["/((?!.*\\..*|_next).*)", "/", "/(api|trpc)(.*)", "/__clerk/:path*"],
 };

@@ -109,6 +109,11 @@ cp .env.example .env.local
 # - DATABASE_URL
 ```
 
+If the repository is linked to a Neon project, run `neon env pull` to
+fill `.env.local` with `DATABASE_URL` (pooled), `DATABASE_URL_UNPOOLED`
+(direct), and `NEON_BRANCH`. Prisma Migrate uses the direct `DIRECT_URL`;
+the application uses the pooled `DATABASE_URL` at runtime.
+
 Prisma validation/generation (no database connection required):
 
 ```bash
@@ -146,7 +151,7 @@ MIRROR is built in phases. Current status:
 - ✅ **Phase 0:** Inspection and planning
 - ✅ **Phase 1:** Foundation
 - ✅ **Phase 2:** Architecture and services
-- ✅ **Phase 3:** Database schema (validated; migrations pending)
+- ✅ **Phase 3:** Database schema (validated; initial migration applied to Neon Postgres)
 - ✅ **Phase 4 / 4.5:** Authentication, authorization, and stabilization
 - ✅ **Phase 5:** Marketing website (public pages, strategy blueprints)
 - ✅ **Phase 6:** Strategy Creator workflow (draft, edit, allocations, updates, publish/archive)

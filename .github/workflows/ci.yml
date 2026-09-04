@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    env:
+      # Non-secret placeholders. Prisma generate/validate only require the
+      # variables to be DEFINED; they never connect to a database in CI.
+      # Real credentials must never be committed or injected here.
+      DATABASE_URL: "postgresql://mirror:mirror@localhost:5432/mirror_ci?schema=public"
+      DIRECT_URL: "postgresql://mirror:mirror@localhost:5432/mirror_ci?schema=public"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Prisma generate
+        run: npx prisma generate
+
+      - name: Prisma validate
+        run: npx prisma validate
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Tests
+        run: npm test
+
+      # Best-effort production build. CI intentionally has no Clerk or Neon
+      # secrets: this step uses only non-secret placeholders and NEVER applies
+      # migrations or writes to any database. A full build check may need real
+      # Clerk development/test keys (public publishable + server secret) in a
+      # preview environment; until then it must not gate the static checks
+      # above. See TESTING_CHECKLIST.md (Phase 17B deployment notes).
+      - name: Build (best effort, non-blocking)
+        continue-on-error: true
+        run: npm run build

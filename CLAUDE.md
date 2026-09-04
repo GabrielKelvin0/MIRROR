@@ -219,7 +219,9 @@ npm run format
 
 - `npm run build` and `next build` fail with a Bus error (`SIGBUS`, exit 135) on
   this aarch64 container — an environment limitation, not a code error. Use
-  `npm run typecheck`, `npm test`, and `npx eslint` for verification.
+  `npm run typecheck`, `npm test`, and `npm run lint` (ESLint flat config;
+  `next lint` is deprecated in Next.js 15.5+ and bus-crashes here) for
+  verification.
 - Clerk configuration requires environment variables (NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY, CLERK_SECRET_KEY)
 - Database requires PostgreSQL running locally or remote connection string
 - Migrations are applied to the linked Neon Postgres project (production
@@ -227,9 +229,15 @@ npm run format
   container. `npm run dev`/`npm run build` still cannot run here (`next`/SWC
   SIGBUS), so interactive runtime verification requires an environment with a
   working Node/Next runtime.
+- GitHub Actions CI (`.github/workflows/ci.yml`) runs Prisma generate/validate,
+  typecheck, lint, and tests against the repository only — it never applies
+  migrations and never connects to or writes any database.
 - Phase 6 (Strategy Creator) features are DB-backed (Prisma). They compile,
   typecheck, and are unit-tested, but were not interactively runtime-executed here; live DB-layer paths are verified against the linked Neon database (migrations applied).
-- Role provisioning (assigning CREATOR/ADMIN to existing users) is not yet implemented as a user-facing capability; new users default to LEARNER
+- Role provisioning for testing is implemented and ADMIN-only: an authenticated
+  ADMIN changes roles from `/admin/users` (server action `changeUserRole` →
+  `userRepository.updateRole`). New users always default to LEARNER; there is no
+  public role selector and no self-assignment path.
 - Local identity is keyed by `clerkId` (the authenticated Clerk subject); see lib/db/repositories/user-repository.ts
 - The public marketing website (Phase 5, extended by Phase 7) is driven by
   typed sample data in lib/data/strategies.ts. These are educational models,
@@ -365,8 +373,8 @@ npm run format
 - Local development server startup (requires Clerk and DB config)
 - Build output optimization
 - Browser testing
-- Responsive design (Phase 19)
-- Accessibility (Phase 19)
+- Responsive design at real browser widths (Phase 14 static fixes landed; browser-level verification is Phase 17B)
+- Accessibility at browser level, e.g. keyboard/screen reader (Phase 14 static fixes landed; browser-level verification is Phase 17B)
 - Live penetration testing / deployed-environment audit beyond static review (Phase 13
   performed a comprehensive static audit; runtime/browser testing is still pending)
 

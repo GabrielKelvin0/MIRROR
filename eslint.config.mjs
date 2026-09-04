@@ -9,7 +9,18 @@ const compat = new FlatCompat({
   baseDirectory: __dirname,
 });
 
-export default [
+const config = [
+  // Vendor-installed agent skills and generated/build output are not part of
+  // the Next.js application and are excluded from linting.
+  {
+    ignores: [
+      "**/.next/**",
+      "**/out/**",
+      "**/build/**",
+      "**/coverage/**",
+      "**/.agents/**",
+    ],
+  },
   ...compat.extends("next/core-web-vitals", "next/typescript"),
   {
     rules: {
@@ -22,3 +33,5 @@ export default [
     },
   },
 ];
+
+export default config;

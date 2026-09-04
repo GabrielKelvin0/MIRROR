@@ -46,10 +46,10 @@ MIRROR focuses on methodology, education, and independent thinking rather than b
 ## Tech Stack
 
 - **Frontend:** Next.js 15 + TypeScript
-- **Styling:** Tailwind CSS + shadcn/ui (ready for Phase 6)
+- **Styling:** Tailwind CSS
 - **Authentication:** Clerk (replaceable)
-- **Database:** PostgreSQL + Prisma ORM (schema validated)
-- **Deployment:** Vercel-ready
+- **Database:** Neon PostgreSQL + Prisma ORM (validated; migrations applied)
+- **Deployment:** Vercel-compatible (no deployment config committed yet; staging setup is Phase 17B)
 
 ## Project Structure
 
@@ -61,19 +61,21 @@ MIRROR/
 │   ├── (learner)/    # Learner dashboard (protected)
 │   ├── (creator)/    # Creator dashboard (protected)
 │   ├── (admin)/      # Admin dashboard (protected)
-│   ├── api/          # API routes
 │   └── layout.tsx    # Root layout (ClerkProvider + html/body)
 ├── components/
-│   └── marketing/    # Reusable marketing website components (Navbar, Hero, etc.)
+│   ├── marketing/    # Public marketing components (Navbar, Hero, etc.)
+│   ├── learner/      # Learner feature components
+│   └── creator/      # Creator feature components
 ├── lib/
 │   ├── data/         # Typed sample/source-of-truth data (e.g. strategies.ts)
 │   ├── services/     # Business logic services
 │   └── ...           # Utilities, database access, auth helpers
 ├── prisma/           # Database schema and migrations
-├── public/           # Static assets
+├── .github/workflows/ # GitHub Actions CI (ci.yml)
 ├── MIRROR_SPEC.md    # Product specification
 ├── ARCHITECTURE.md   # Application architecture
 ├── CLAUDE.md         # Engineering rules
+├── TESTING_CHECKLIST.md # Phase 17B browser smoke-test checklist
 ├── MIRROR_MASTER_PROMPT.md # Phased implementation prompt (0–17)
 ├── package.json      # Dependencies
 ├── tsconfig.json     # TypeScript config
@@ -165,7 +167,8 @@ MIRROR is built in phases. Current status:
 - ✅ **Phase 14:** Responsive & accessibility audit (fixed contrast failures on small text/CTA buttons, added skip-to-content links and table `scope`, fixed a sr-only-only error display, responsive grids/narrow-width overflow, touch targets, heading hierarchy)
 - ✅ **Phase 15:** Performance (removed duplicate DB query on the paper-portfolio detail page and parallelized its independent queries; collapsed the creator edit/preview pages from 5 queries to 1 via a single ownership-checked detail read; no N+1 loops found elsewhere)
 - ✅ **Phase 16 (Testing):** Expanded automated coverage for the highest-value risk areas — the authorization choke-point (`lib/auth/session.ts`, now 8 tests), role guards (`hasRole` strict equality), strategy publish/update rules (self-transition, whitespace, weight boundaries), entitlement `strategyAccess` (paid strategies denied even to the highest tier without a subscription), portfolio calc edge cases (NaN inputs, allocation-total boundaries), performance data-quality handling (zero-value/constant series), and every `AppError` subclass. Suite grew from 126 to 163 tests across 10 files.
-- ⏳ **Phase 16+:** Feature implementation
+- ✅ **Phase 16+ (post-16 work):** Neon Postgres connected and initial migration applied; admin management and research flows; Academy progress decoupled from the Lesson FK until the curriculum is DB-backed
+- ✅ **Phase 17A (Pre-Testing Readiness):** real GitHub Actions CI, environment/config reconciliation, and TESTING_CHECKLIST.md added — no new product features
 
 Phase work is tracked in MIRROR_MASTER_PROMPT.md (Phases 0–17); product
 requirements are sourced from MIRROR_SPEC.md.
@@ -232,13 +235,18 @@ See CLAUDE.md for security guidelines.
 
 ## Performance
 
-Performance is measured, not speculated. Performance work is scheduled for a
-later phase.
+Performance and risk metrics are implemented (Phase 11) as clearly labelled,
+deterministic demo series over a sample benchmark (`lib/data/performance-demo.ts`,
+`lib/services/performance-rules.ts`). No live market-data provider is connected;
+all figures are educational demo data. Status: unit-tested and statically
+verified; not yet browser-verified.
 
 ## Accessibility
 
-MIRROR is built for everyone. Accessibility requirements are scheduled for a
-later phase.
+Phase 14 applied a static accessibility/responsive audit (contrast, skip links,
+focus visibility, table scopes, touch targets, responsive grids). Browser-level
+verification (keyboard navigation, screen reader, mobile widths) is pending —
+see TESTING_CHECKLIST.md.
 
 ## License
 
@@ -246,13 +254,25 @@ TBD
 
 ## Status
 
-**Phases 0–16 COMPLETE; Phase 17 (Final Review) in progress**
+**Phase 17A (Pre-Testing Readiness) complete — MIRROR is ready for Phase 17B (staging deployment and real browser testing)**
 
-Clerk authentication is active (development keys linked to the Clerk
-application), `/learner/*`, `/creator/*`, and `/admin/*` are protected by
-middleware and server-side role authorization, and new users default to
-LEARNER. MIRROR runs on a live Neon Postgres project: the initial migration
-and the Academy progress-FK migration are applied and the schema is up to
-date. Static verification, the automated suite, and live DB-layer probes
-pass. Interactive browser verification requires a machine where the Next.js
-dev server can run — this container's `next`/SWC crashes with SIGBUS.
+Clerk authentication is active (development keys), `/learner/*`, `/creator/*`,
+and `/admin/*` are protected by middleware plus server-side role checks, new
+users default to LEARNER, and CREATOR/ADMIN roles are assigned only by an
+authenticated ADMIN from `/admin/users`. MIRROR runs on a live Neon Postgres
+project: the initial migration and the Academy progress-FK migration are
+applied and the schema is up to date. GitHub Actions CI
+(`.github/workflows/ci.yml`) runs Prisma generate/validate, typecheck, lint,
+and the 163-test suite; it never applies migrations and never writes to any
+database. Automated checks pass; interactive browser verification has not
+been run yet (this container's `next`/SWC crashes with SIGBUS) —
+TESTING_CHECKLIST.md defines the Phase 17B smoke tests.
+
+### Verification status
+
+- **Implemented** — code exists in this repository
+- **Statically verified** — typecheck and lint pass (no running app)
+- **DB-layer verified** — Prisma schema and migrations checked against the linked Neon database (no destructive operations)
+- **Automated-test verified** — unit tests pass (163 tests / 10 files)
+- **Browser/runtime verified** — not yet: requires a working Next.js runtime (staging/preview)
+- **Not yet verified** — production build output, live interaction, mobile/accessibility browser checks

@@ -172,6 +172,12 @@ strategy is verified server-side (never client-supplied identity)
 
 **Security:** Every admin action is auditable
 
+Implemented admin surfaces (all ADMIN-guarded server-side): `/admin/users` (role
+management), `/admin/creators`, `/admin/strategies` (status moderation), and
+`/admin/reports` (status resolution). `AuditLog` rows are written by admin and
+creator mutations; there is no dedicated audit-log UI yet. Platform
+configuration and Academy content management remain planned.
+
 ---
 
 ## Layered Architecture
@@ -517,6 +523,15 @@ export class ValidationError extends AppError {
 ---
 
 ## Next Steps
+
+**Verification & CI (Phase 17A):** GitHub Actions (`.github/workflows/ci.yml`)
+runs `npm ci` → `npx prisma generate` → `npx prisma validate` →
+`npm run typecheck` → `npm run lint` → `npm test`, then attempts
+`npm run build` best-effort with non-secret placeholders. CI never applies
+migrations and never writes to any database. Browser smoke tests for Phase 17B
+are defined in TESTING_CHECKLIST.md. Role provisioning for testing: an
+authenticated ADMIN assigns LEARNER/CREATOR/ADMIN from `/admin/users`; new
+users always default to LEARNER.
 
 **Phase 3:** Database schema — implemented (validated; initial migration applied to Neon Postgres)
 

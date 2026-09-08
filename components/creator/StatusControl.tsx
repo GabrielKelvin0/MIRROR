@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { changeStatus, type ActionResult } from "@/app/(creator)/strategies/actions";
+import { changeStatus, type ActionResult } from "@/app/(creator)/creator/strategies/actions";
 import type { StrategyStatus } from "@prisma/client";
 
 type Props = {

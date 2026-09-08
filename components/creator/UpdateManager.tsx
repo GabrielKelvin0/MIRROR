@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { addUpdate } from "@/app/(creator)/strategies/actions";
+import { addUpdate } from "@/app/(creator)/creator/strategies/actions";
 
 type Update = {
   id: string;

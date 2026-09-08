@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { recordDecision, type ActionResult } from "@/app/(learner)/portfolio/actions";
+import { recordDecision, type ActionResult } from "@/app/(learner)/learner/portfolio/actions";
 
 type Props = {
   portfolioId: string;

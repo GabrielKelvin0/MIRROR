@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { addAllocation, deleteAllocation } from "@/app/(creator)/strategies/actions";
+import { addAllocation, deleteAllocation } from "@/app/(creator)/creator/strategies/actions";
 
 type Allocation = {
   id: string;

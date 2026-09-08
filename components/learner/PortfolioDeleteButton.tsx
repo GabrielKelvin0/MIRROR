@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { deletePortfolio, type ActionResult } from "@/app/(learner)/portfolio/actions";
+import { deletePortfolio, type ActionResult } from "@/app/(learner)/learner/portfolio/actions";
 
 type Props = {
   portfolioId: string;

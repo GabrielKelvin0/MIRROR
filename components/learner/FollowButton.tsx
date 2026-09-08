@@ -5,7 +5,7 @@ import {
   followStrategy,
   unfollowStrategy,
   type ActionResult,
-} from "@/app/(learner)/following/actions";
+} from "@/app/(learner)/learner/following/actions";
 
 type Props = {
   strategyId: string;

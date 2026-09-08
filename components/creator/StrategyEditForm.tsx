@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { updateStrategy } from "@/app/(creator)/strategies/actions";
+import { updateStrategy } from "@/app/(creator)/creator/strategies/actions";
 
 type Props = {
   strategyId: string;

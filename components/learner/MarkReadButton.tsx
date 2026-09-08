@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { markNotificationRead, type ActionResult } from "@/app/(learner)/following/actions";
+import { markNotificationRead, type ActionResult } from "@/app/(learner)/learner/following/actions";
 
 type Props = {
   notificationId: string;

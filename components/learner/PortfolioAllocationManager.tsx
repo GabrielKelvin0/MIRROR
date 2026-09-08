@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { addStrategy, removeStrategy, type ActionResult } from "@/app/(learner)/portfolio/actions";
+import { addStrategy, removeStrategy, type ActionResult } from "@/app/(learner)/learner/portfolio/actions";
 
 type AllocationEntry = {
   id: string;

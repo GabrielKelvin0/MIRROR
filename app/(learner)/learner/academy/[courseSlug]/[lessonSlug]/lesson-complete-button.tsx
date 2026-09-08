@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { setLessonCompletion, type ActionResult } from "@/app/(learner)/academy/actions";
+import { setLessonCompletion, type ActionResult } from "@/app/(learner)/learner/academy/actions";
 
 interface LessonCompleteButtonProps {
   courseSlug: string;

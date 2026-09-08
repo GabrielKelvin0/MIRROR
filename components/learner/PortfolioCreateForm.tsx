@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { createPortfolio, type ActionResult } from "@/app/(learner)/portfolio/actions";
+import { createPortfolio, type ActionResult } from "@/app/(learner)/learner/portfolio/actions";
 
 const initialState: ActionResult = { error: undefined };
 

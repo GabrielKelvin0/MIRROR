@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { createStrategy } from "@/app/(creator)/strategies/actions";
+import { createStrategy } from "@/app/(creator)/creator/strategies/actions";
 
 const initialState = { error: undefined as string | undefined };
 

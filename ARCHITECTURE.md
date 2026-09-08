@@ -84,7 +84,7 @@ URLs. `scripts/check-routes.mjs` (npm run check:routes) guards this structure in
 - What MIRROR is / is not (guardrails)
 - CTA and footer with disclosures
 
-- Phase 18: public discovery/detail of PUBLISHED creator-authored strategies — `/strategies` lists live strategies from creators (kept separate from labeled sample models), and `/strategies/[id]` renders the creator's DB-backed thesis, methodology/decision rules, risk and exit conditions, target allocation, update & decision history, creator profile, and any model performance context; learner following links into these public detail pages
+- Phase 18: public discovery/detail of PUBLISHED creator-authored strategies — `/strategies` lists live strategies from creators (kept separate from labeled sample models), and `/strategies/[id]` renders the creator's DB-backed thesis, methodology/decision rules, risk and exit conditions, target allocation, update & decision history, creator profile, and any model performance context; learner following links into these public detail pages — DB-native public rendering is intentional: sample blueprint UI is unchanged, and mapping published strategies into it would require fabricating category/tagline/region metadata that is not stored in the database
 
 **Planned (future phases, not yet built):** pricing, go-to-market, public
 creator profiles/directory, academy overview, paper-portfolio demo.

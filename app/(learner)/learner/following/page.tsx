@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { requireRole } from "@/lib/auth/session";
 import { followRepository, strategyRepository } from "@/lib/db";
 import { FollowButton } from "@/components/learner/FollowButton";
@@ -41,7 +42,12 @@ export default async function FollowingPage() {
             {followed.map((follow) => (
               <li key={follow.id} className="flex items-center justify-between gap-4 p-4">
                 <div>
-                  <p className="font-medium text-neutral-900">{follow.strategy.name}</p>
+                  <Link
+                    href={"/strategies/" + follow.strategy.id}
+                    className="font-medium text-neutral-900 hover:text-emerald-700"
+                  >
+                    {follow.strategy.name}
+                  </Link>
                   <p className="text-sm text-neutral-500">
                     {follow.strategy.riskProfile ?? "Risk not set"} ·{" "}
                     {follow.strategy.timeHorizon ?? "Horizon not set"}
@@ -69,7 +75,12 @@ export default async function FollowingPage() {
           <ul className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
             {discoverable.map((strategy) => (
               <li key={strategy.id} className="rounded-xl border border-neutral-200 bg-white p-5">
-                <p className="font-medium text-neutral-900">{strategy.name}</p>
+                <Link
+                  href={"/strategies/" + strategy.id}
+                  className="font-medium text-neutral-900 hover:text-emerald-700"
+                >
+                  {strategy.name}
+                </Link>
                 <p className="mt-1 text-sm text-neutral-500">
                   {strategy.riskProfile ?? "Risk not set"} ·{" "}
                   {strategy.timeHorizon ?? "Horizon not set"}

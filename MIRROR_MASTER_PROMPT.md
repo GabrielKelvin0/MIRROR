@@ -508,7 +508,7 @@ Before declaring the MVP complete:
 
 Never claim a check passed unless you actually ran it.
 
-## PHASE 18 — UNIFIED STRATEGY LIFECYCLE (PROPOSED FUTURE WORK)
+## PHASE 18 — UNIFIED STRATEGY LIFECYCLE (IMPLEMENTED 2026-09-08)
 
 Added 2026-09-08 from the full-site gap analysis. This phase is PROPOSED
 FUTURE WORK and is not yet approved. Do not start it until explicitly

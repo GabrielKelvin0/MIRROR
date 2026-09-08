@@ -24,6 +24,7 @@ therefore use a real segment under each group (e.g. `app/(learner)/learner/dashb
 wrap every nested page.
 
 Public:
+
 - `/` — marketing homepage
 - `/about`, `/how-it-works` — marketing pages
 - `/strategies`, `/strategies/[slug]` — strategy blueprint discovery
@@ -31,6 +32,7 @@ Public:
 - `/sign-in`, `/sign-up` — Clerk auth (route group `(auth)`)
 
 Learner (layout `app/(learner)/layout.tsx` requires LEARNER):
+
 - `/learner/dashboard`
 - `/learner/following`, `/learner/notifications`
 - `/learner/portfolio`, `/learner/portfolio/[id]`
@@ -38,12 +40,14 @@ Learner (layout `app/(learner)/layout.tsx` requires LEARNER):
 - `/learner/subscription`
 
 Creator (layout `app/(creator)/layout.tsx` requires CREATOR):
+
 - `/creator/dashboard`
 - `/creator/dashboard/strategies/new`
 - `/creator/dashboard/strategies/[id]/edit`
 - `/creator/dashboard/strategies/[id]/preview`
 
 Admin (layout `app/(admin)/layout.tsx` requires ADMIN):
+
 - `/admin/dashboard`, `/admin/users`, `/admin/creators`
 - `/admin/strategies`, `/admin/reports`
 
@@ -80,8 +84,10 @@ URLs. `scripts/check-routes.mjs` (npm run check:routes) guards this structure in
 - What MIRROR is / is not (guardrails)
 - CTA and footer with disclosures
 
-**Planned (future phases, not yet built):** pricing, go-to-market, creator
-sections, academy overview, paper-portfolio demo.
+- Phase 18: public discovery/detail of PUBLISHED creator-authored strategies — `/strategies` lists live strategies from creators (kept separate from labeled sample models), and `/strategies/[id]` renders the creator's DB-backed thesis, methodology/decision rules, risk and exit conditions, target allocation, update & decision history, creator profile, and any model performance context; learner following links into these public detail pages
+
+**Planned (future phases, not yet built):** pricing, go-to-market, public
+creator profiles/directory, academy overview, paper-portfolio demo.
 
 **Components:** `components/marketing/` (Navbar, Footer, Hero, SectionHeading,
 StrategyCard, StrategyBlueprint, MethodologyFlow, CTA). No DB access, no user

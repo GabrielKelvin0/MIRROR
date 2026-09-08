@@ -34,6 +34,7 @@ export async function followStrategy(
   try {
     await followRepository.follow(userId, validateFollowInput({ strategyId }));
     revalidatePath("/learner/following");
+    revalidatePath("/strategies/" + strategyId);
     return { error: undefined };
   } catch (err) {
     return { error: messageOf(err) };
@@ -50,6 +51,7 @@ export async function unfollowStrategy(
   try {
     await followRepository.unfollow(userId, strategyId);
     revalidatePath("/learner/following");
+    revalidatePath("/strategies/" + strategyId);
     return { error: undefined };
   } catch (err) {
     return { error: messageOf(err) };

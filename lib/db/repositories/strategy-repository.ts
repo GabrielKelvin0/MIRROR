@@ -257,7 +257,14 @@ export class StrategyRepository {
             id: true,
             firstName: true,
             lastName: true,
-            creatorProfile: { select: { bio: true, investmentPhilosophy: true } },
+            creatorProfile: {
+              select: {
+                bio: true,
+                investmentPhilosophy: true,
+                isVerified: true,
+                yearsOfExperience: true,
+              },
+            },
           },
         },
         allocations: { orderBy: { targetWeight: "desc" } },
@@ -276,10 +283,30 @@ export class StrategyRepository {
       where: { status: "PUBLISHED" },
       orderBy: { publishedAt: "desc" },
       include: {
-        creator: { select: { firstName: true, lastName: true } },
+        creator: {
+          select: {
+            firstName: true,
+            lastName: true,
+            creatorProfile: { select: { isVerified: true } },
+          },
+        },
       },
     });
   }
 }
+
+/**
+ * Public (PUBLISHED-only) strategy detail row returned by getPublished.
+ */
+export type PublishedStrategyDetail = NonNullable<
+  Awaited<ReturnType<StrategyRepository["getPublished"]>>
+>;
+
+/**
+ * Public (PUBLISHED-only) strategy summary row returned by listPublished.
+ */
+export type PublishedStrategySummary = Awaited<
+  ReturnType<StrategyRepository["listPublished"]>
+>[number];
 
 export const strategyRepository = new StrategyRepository();

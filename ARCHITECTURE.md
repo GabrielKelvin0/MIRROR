@@ -14,6 +14,44 @@ MIRROR is a layered, service-oriented application built on Next.js. The architec
 
 ---
 
+## Current URL Map (Phase 17C)
+
+Route groups `(public)`, `(auth)`, `(learner)`, `(creator)`, `(admin)` organize
+layouts only — they do NOT contribute URL segments. Protected role areas
+therefore use a real segment under each group (e.g. `app/(learner)/learner/dashboard/page.tsx` →
+`/learner/dashboard`). Server-side role layouts at the group root
+(`app/(learner)/layout.tsx`, `app/(creator)/layout.tsx`, `app/(admin)/layout.tsx`) still
+wrap every nested page.
+
+Public:
+- `/` — marketing homepage
+- `/about`, `/how-it-works` — marketing pages
+- `/strategies`, `/strategies/[slug]` — strategy blueprint discovery
+- `/research`, `/research/[slug]` — research articles
+- `/sign-in`, `/sign-up` — Clerk auth (route group `(auth)`)
+
+Learner (layout `app/(learner)/layout.tsx` requires LEARNER):
+- `/learner/dashboard`
+- `/learner/following`, `/learner/notifications`
+- `/learner/portfolio`, `/learner/portfolio/[id]`
+- `/learner/academy`, `/learner/academy/[courseSlug]`, `/learner/academy/[courseSlug]/[lessonSlug]`
+- `/learner/subscription`
+
+Creator (layout `app/(creator)/layout.tsx` requires CREATOR):
+- `/creator/dashboard`
+- `/creator/dashboard/strategies/new`
+- `/creator/dashboard/strategies/[id]/edit`
+- `/creator/dashboard/strategies/[id]/preview`
+
+Admin (layout `app/(admin)/layout.tsx` requires ADMIN):
+- `/admin/dashboard`, `/admin/users`, `/admin/creators`
+- `/admin/strategies`, `/admin/reports`
+
+Middleware protects `/learner/*`, `/creator/*`, `/admin/*` and matches these real
+URLs. `scripts/check-routes.mjs` (npm run check:routes) guards this structure in CI.
+
+---
+
 ## Application Boundaries
 
 ### 1. Public Website
@@ -566,7 +604,7 @@ title/description), a notification is fanned out to its followers. Pure,
 anti-spam rules live in `lib/services/following-rules.ts` (unit-tested in
 `following-rules.test.ts`); persistence lives in `lib/db/repositories/`
 (`follow-repository.ts`, `notification-repository.ts`); server actions are in
-`app/(learner)/following/actions.ts`; learner UI is under `/learner/following`
+`app/(learner)/learner/following/actions.ts`; learner UI is under `/learner/following`
 and `/learner/notifications` with read/unread state and appropriate loading,
 error, and empty states. Notification payloads are safe (display-only title +
 message; no emails or other sensitive data), and notifications are only ever
@@ -585,7 +623,7 @@ Pure, deterministic math and validation live in
 enforcement, input/decision validation; unit-tested in
 `portfolio-rules.test.ts`). Persistence with ownership-at-the-boundary lives in
 `lib/db/repositories/portfolio-repository.ts`; server actions are in
-`app/(learner)/portfolio/actions.ts`; learner UI is under `/learner/portfolio`
+`app/(learner)/learner/portfolio/actions.ts`; learner UI is under `/learner/portfolio`
 (list + detail) with client components in `components/learner/`
 (`PortfolioCreateForm`, `PortfolioAllocationManager`, `PortfolioDecisionForm`,
 `PortfolioDeleteButton`). Portfolio rows are scoped to the authenticated user;
@@ -611,7 +649,7 @@ for DB records without a redesign. Pure, deterministic rules (progress math,
 completion-state resolution, input validation, lesson navigation) live in
 `lib/services/academy-rules.ts` (unit-tested in `academy-rules.test.ts`).
 Persistence with per-user scoping lives in `lib/db/repositories/
-academy-repository.ts`; server actions are in `app/(learner)/academy/actions.ts`;
+academy-repository.ts`; server actions are in `app/(learner)/learner/academy/actions.ts`;
 learner UI is under `/learner/academy` (catalog, course detail with progress bar,
 lesson content with complete/incomplete toggle and prev/next navigation) plus a
 client `LessonCompleteButton`. Progress rows are scoped to the authenticated user.

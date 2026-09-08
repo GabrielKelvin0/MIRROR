@@ -17,7 +17,10 @@ import type { StrategyStatus } from "@prisma/client";
  * by the repository against that resolved user id — never against
  * client-supplied identity.
  *
- * These are server-only mutations; there are no client component imports here.
+ * Next.js 15 requires every exported server action to be an async function.
+ * Actions that need route-provided ids receive them as bound arguments from
+ * the client component (`.bind(null, id)`), never from client-supplied
+ * identity.
  */
 
 export type ActionResult = { error: string | undefined };
@@ -50,129 +53,129 @@ export async function createStrategy(
 }
 
 /** Save strategy fields. Redirects back to the dashboard on success. */
-export function updateStrategy(
-  strategyId: string
-): (prev: ActionResult, formData: FormData) => Promise<ActionResult> {
-  return async (_prev: ActionResult, formData: FormData): Promise<ActionResult> => {
-    const creatorId = await getCreatorId();
-    try {
-      await strategyRepository.update(strategyId, creatorId, {
-        name: formData.get("name") as string,
-        description: formData.get("description") as string,
-        philosophy: formData.get("philosophy") as string,
-        objective: formData.get("objective") as string,
-        riskProfile: formData.get("riskProfile") as string,
-        timeHorizon: formData.get("timeHorizon") as string,
-        thesis: formData.get("thesis") as string,
-        decisionRules: formData.get("decisionRules") as string,
-        rebalancePolicy: formData.get("rebalancePolicy") as string,
-        exitConditions: formData.get("exitConditions") as string,
-        invalidatingConditions: formData.get("invalidatingConditions") as string,
-      });
-      revalidatePath(`/creator/dashboard/strategies/${strategyId}`);
-      revalidatePath("/creator/dashboard");
-      return { error: undefined };
-    } catch (err) {
-      return { error: messageOf(err) };
-    }
-  };
+export async function updateStrategy(
+  strategyId: string,
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const creatorId = await getCreatorId();
+  try {
+    await strategyRepository.update(strategyId, creatorId, {
+      name: formData.get("name") as string,
+      description: formData.get("description") as string,
+      philosophy: formData.get("philosophy") as string,
+      objective: formData.get("objective") as string,
+      riskProfile: formData.get("riskProfile") as string,
+      timeHorizon: formData.get("timeHorizon") as string,
+      thesis: formData.get("thesis") as string,
+      decisionRules: formData.get("decisionRules") as string,
+      rebalancePolicy: formData.get("rebalancePolicy") as string,
+      exitConditions: formData.get("exitConditions") as string,
+      invalidatingConditions: formData.get("invalidatingConditions") as string,
+    });
+    revalidatePath(`/creator/dashboard/strategies/${strategyId}`);
+    revalidatePath("/creator/dashboard");
+    return { error: undefined };
+  } catch (err) {
+    return { error: messageOf(err) };
+  }
 }
 
 /** Add an allocation line to a strategy. */
-export function addAllocation(
-  strategyId: string
-): (prev: ActionResult, formData: FormData) => Promise<ActionResult> {
-  return async (_prev: ActionResult, formData: FormData): Promise<ActionResult> => {
-    const creatorId = await getCreatorId();
-    try {
-      await strategyRepository.addAllocation(strategyId, creatorId, {
-        assetClass: formData.get("assetClass") as string,
-        targetWeight: Number(formData.get("targetWeight")),
-        reasoning: formData.get("reasoning") as string,
-      });
-      revalidatePath(`/creator/dashboard/strategies/${strategyId}/edit`);
-      return { error: undefined };
-    } catch (err) {
-      return { error: messageOf(err) };
-    }
-  };
+export async function addAllocation(
+  strategyId: string,
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const creatorId = await getCreatorId();
+  try {
+    await strategyRepository.addAllocation(strategyId, creatorId, {
+      assetClass: formData.get("assetClass") as string,
+      targetWeight: Number(formData.get("targetWeight")),
+      reasoning: formData.get("reasoning") as string,
+    });
+    revalidatePath(`/creator/dashboard/strategies/${strategyId}/edit`);
+    return { error: undefined };
+  } catch (err) {
+    return { error: messageOf(err) };
+  }
 }
 
 /** Set a strategy's status (publish or archive). */
-export function changeStatus(
+export async function changeStatus(
   strategyId: string,
-  to: StrategyStatus
-): (prev: ActionResult, formData: FormData) => Promise<ActionResult> {
-  return async (_prev: ActionResult, _formData: FormData): Promise<ActionResult> => {
-    const creatorId = await getCreatorId();
-    try {
-      await strategyRepository.setStatus(strategyId, creatorId, to);
-      revalidatePath(`/creator/dashboard/strategies/${strategyId}`);
-      revalidatePath("/creator/dashboard");
-      return { error: undefined };
-    } catch (err) {
-      return { error: messageOf(err) };
-    }
-  };
+  to: StrategyStatus,
+  _prev: ActionResult,
+  _formData: FormData
+): Promise<ActionResult> {
+  const creatorId = await getCreatorId();
+  try {
+    await strategyRepository.setStatus(strategyId, creatorId, to);
+    revalidatePath(`/creator/dashboard/strategies/${strategyId}`);
+    revalidatePath("/creator/dashboard");
+    return { error: undefined };
+  } catch (err) {
+    return { error: messageOf(err) };
+  }
 }
 
 /** Publish a strategy update with a rationale. */
-export function addUpdate(
-  strategyId: string
-): (prev: ActionResult, formData: FormData) => Promise<ActionResult> {
-  return async (_prev: ActionResult, formData: FormData): Promise<ActionResult> => {
-    const creatorId = await getCreatorId();
-    try {
-      const effectiveDateInput = formData.get("effectiveDate") as string;
-      const payload: {
-        title: string;
-        description: string;
-        changesSummary: string;
-        reasoning: string;
-        riskAssessment: string;
-        effectiveDate?: Date;
-      } = {
-        title: formData.get("title") as string,
-        description: formData.get("description") as string,
-        changesSummary: formData.get("changesSummary") as string,
-        reasoning: formData.get("reasoning") as string,
-        riskAssessment: formData.get("riskAssessment") as string,
-      };
-      if (effectiveDateInput) {
-        payload.effectiveDate = new Date(effectiveDateInput);
-      }
-      const update = await strategyRepository.addUpdate(strategyId, creatorId, payload);
-      // Fan out notifications to followers only when the update is "meaningful"
-      // (published strategy with non-empty title/description). The anti-spam
-      // gate lives in the repository, so drafts/archived/blank updates never spam.
-      await followRepository.notifyFollowersOfUpdate(update.strategyId, {
-        id: update.id,
-        title: update.title,
-        description: update.description,
-      });
-      revalidatePath(`/creator/dashboard/strategies/${strategyId}/edit`);
-      return { error: undefined };
-    } catch (err) {
-      return { error: messageOf(err) };
+export async function addUpdate(
+  strategyId: string,
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const creatorId = await getCreatorId();
+  try {
+    const effectiveDateInput = formData.get("effectiveDate") as string;
+    const payload: {
+      title: string;
+      description: string;
+      changesSummary: string;
+      reasoning: string;
+      riskAssessment: string;
+      effectiveDate?: Date;
+    } = {
+      title: formData.get("title") as string,
+      description: formData.get("description") as string,
+      changesSummary: formData.get("changesSummary") as string,
+      reasoning: formData.get("reasoning") as string,
+      riskAssessment: formData.get("riskAssessment") as string,
+    };
+    if (effectiveDateInput) {
+      payload.effectiveDate = new Date(effectiveDateInput);
     }
-  };
+    const update = await strategyRepository.addUpdate(strategyId, creatorId, payload);
+    // Fan out notifications to followers only when the update is "meaningful"
+    // (published strategy with non-empty title/description). The anti-spam
+    // gate lives in the repository, so drafts/archived/blank updates never spam.
+    await followRepository.notifyFollowersOfUpdate(update.strategyId, {
+      id: update.id,
+      title: update.title,
+      description: update.description,
+    });
+    revalidatePath(`/creator/dashboard/strategies/${strategyId}/edit`);
+    return { error: undefined };
+  } catch (err) {
+    return { error: messageOf(err) };
+  }
 }
 
 /** Delete an allocation line. */
-export function deleteAllocation(
+export async function deleteAllocation(
   strategyId: string,
-  allocationId: string
-): (prev: ActionResult, formData: FormData) => Promise<ActionResult> {
-  return async (_prev: ActionResult, _formData: FormData): Promise<ActionResult> => {
-    const creatorId = await getCreatorId();
-    try {
-      await strategyRepository.deleteAllocation(strategyId, creatorId, allocationId);
-      revalidatePath(`/creator/dashboard/strategies/${strategyId}/edit`);
-      return { error: undefined };
-    } catch (err) {
-      return { error: messageOf(err) };
-    }
-  };
+  allocationId: string,
+  _prev: ActionResult,
+  _formData: FormData
+): Promise<ActionResult> {
+  const creatorId = await getCreatorId();
+  try {
+    await strategyRepository.deleteAllocation(strategyId, creatorId, allocationId);
+    revalidatePath(`/creator/dashboard/strategies/${strategyId}/edit`);
+    return { error: undefined };
+  } catch (err) {
+    return { error: messageOf(err) };
+  }
 }
 
 function messageOf(err: unknown): string {

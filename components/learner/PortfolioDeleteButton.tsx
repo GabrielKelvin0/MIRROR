@@ -10,7 +10,7 @@ type Props = {
 const initialState: ActionResult = { error: undefined };
 
 export function PortfolioDeleteButton({ portfolioId }: Props) {
-  const [state, formAction, pending] = useActionState(deletePortfolio(portfolioId), initialState);
+  const [state, formAction, pending] = useActionState(deletePortfolio.bind(null, portfolioId), initialState);
 
   return (
     <form

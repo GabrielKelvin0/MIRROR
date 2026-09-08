@@ -13,9 +13,10 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     env:
-      # Non-secret placeholders. Prisma generate/validate only require the
-      # variables to be DEFINED; they never connect to a database in CI.
-      # Real credentials must never be committed or injected here.
+      # Non-secret placeholders. Prisma generate/validate and the Next build
+      # only require the variables to be DEFINED; CI never connects to a
+      # database and never applies migrations. Real credentials must never be
+      # committed or injected here.
       DATABASE_URL: "postgresql://mirror:mirror@localhost:5432/mirror_ci?schema=public"
       DIRECT_URL: "postgresql://mirror:mirror@localhost:5432/mirror_ci?schema=public"
     steps:
@@ -46,12 +47,13 @@ jobs:
       - name: Tests
         run: npm test
 
-      # Best-effort production build. CI intentionally has no Clerk or Neon
-      # secrets: this step uses only non-secret placeholders and NEVER applies
-      # migrations or writes to any database. A full build check may need real
-      # Clerk development/test keys (public publishable + server secret) in a
-      # preview environment; until then it must not gate the static checks
-      # above. See TESTING_CHECKLIST.md (Phase 17B deployment notes).
-      - name: Build (best effort, non-blocking)
-        continue-on-error: true
+      - name: Route structure check
+        run: npm run check:routes
+
+      # Required production build. The Phase 17B Vercel staging attempt failed
+      # with App Router route collisions while CI stayed green, so the build is
+      # a required step and must never fail silently. No Clerk secrets are
+      # present; the placeholder DATABASE_URL/DIRECT_URL values above only need
+      # to be defined for Prisma generate/validate and compilation.
+      - name: Build
         run: npm run build

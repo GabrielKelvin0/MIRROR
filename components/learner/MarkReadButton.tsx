@@ -12,7 +12,7 @@ const initialState: ActionResult = { error: undefined };
 
 export function MarkReadButton({ notificationId, unread }: Props) {
   const [state, formAction, pending] = useActionState(
-    markNotificationRead(notificationId),
+    markNotificationRead.bind(null, notificationId),
     initialState
   );
 

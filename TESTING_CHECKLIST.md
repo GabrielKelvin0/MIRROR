@@ -152,3 +152,29 @@ created during Phase 17A):
 
 Point staging tests at a Neon test branch; do not point them at the production
 data source.
+
+## I. Phase 17C — routing repair and CI hardening (recorded)
+
+Recorded 2026-09-08. These are facts about the deployment repair phase, not
+passing browser-test results.
+
+- **Vercel staging attempt exposed route collisions.** Route groups do not
+  contribute URL segments, so the previous filesystem produced colliding pages
+  (`app/(admin)/dashboard/page.tsx`, `app/(creator)/dashboard/page.tsx`,
+  `app/(learner)/dashboard/page.tsx` all resolved to `/dashboard`, and the
+  admin/public `strategies` pages both resolved to `/strategies`). The Vercel
+  production build failed while CI remained green because the CI build step was
+  best-effort (`continue-on-error: true`).
+- **Collisions repaired.** Protected pages moved under real URL segments:
+  `/learner/*`, `/creator/*`, `/admin/*`. Public discovery stays at
+  `/strategies`; admin moderation moved to `/admin/strategies`. Route-group
+  layouts still wrap the moved pages and keep their server-side
+  `requireRole(...)` checks.
+- **CI hardening.** `.github/workflows/ci.yml` now runs `npm run build` as a
+  required step (no `continue-on-error`), preceded by Prisma generate/validate,
+  typecheck, lint, tests, and `npm run check:routes`
+  (`scripts/check-routes.mjs`), which fails on duplicate page URLs and on
+  protected pages missing their role segment.
+- **Runtime/browser testing is still pending.** Sections A–G above must not be
+  marked PASS until a staging deployment serves the repaired routes and each
+  case is observed in a real browser. Status cells above remain blank.

@@ -23,7 +23,7 @@ type Props = {
 const initialState = { error: undefined as string | undefined };
 
 export function StrategyEditForm({ strategyId, initial }: Props) {
-  const [state, formAction, pending] = useActionState(updateStrategy(strategyId), initialState);
+  const [state, formAction, pending] = useActionState(updateStrategy.bind(null, strategyId), initialState);
 
   return (
     <form action={formAction} className="space-y-5">

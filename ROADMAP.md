@@ -182,12 +182,12 @@
 **Depends on:** TASK 3 + Database setup  
 **Files to create:**
 - `app/(learner)/layout.tsx` (sidebar + nav)
-- `app/(learner)/dashboard/page.tsx` (learner entry)
-- `app/(learner)/portfolio/page.tsx` (list portfolios)
-- `app/(learner)/portfolio/[id]/page.tsx` (portfolio detail)
-- `app/(learner)/following/page.tsx` (strategies I follow)
-- `app/(learner)/notifications/page.tsx` (updates)
-- `app/(learner)/academy/page.tsx` (learning paths)
+- `app/(learner)/learner/dashboard/page.tsx` (learner entry)
+- `app/(learner)/learner/portfolio/page.tsx` (list portfolios)
+- `app/(learner)/learner/portfolio/[id]/page.tsx` (portfolio detail)
+- `app/(learner)/learner/following/page.tsx` (strategies I follow)
+- `app/(learner)/learner/notifications/page.tsx` (updates)
+- `app/(learner)/learner/academy/page.tsx` (learning paths)
 - `components/learner/PortfolioCard.tsx`
 - `components/learner/PortfolioForm.tsx`
 - `components/learner/AllocationManager.tsx`
@@ -238,12 +238,10 @@
 **Depends on:** TASK 3 + Database setup  
 **Files to create:**
 - `app/(creator)/layout.tsx` (creator nav)
-- `app/(creator)/dashboard/page.tsx` (creator entry)
-- `app/(creator)/strategies/page.tsx` (my strategies list)
-- `app/(creator)/strategies/new/page.tsx` (create strategy)
-- `app/(creator)/strategies/[id]/edit/page.tsx` (edit draft)
-- `app/(creator)/strategies/[id]/preview/page.tsx` (preview before publish)
-- `app/(creator)/strategies/[id]/updates/new/page.tsx` (publish update)
+- `app/(creator)/creator/dashboard/page.tsx` (creator entry; own-strategy list)
+- `app/(creator)/creator/dashboard/strategies/new/page.tsx` (create strategy)
+- `app/(creator)/creator/dashboard/strategies/[id]/edit/page.tsx` (edit draft + updates)
+- `app/(creator)/creator/dashboard/strategies/[id]/preview/page.tsx` (preview before publish)
 - `components/creator/StrategyForm.tsx`
 - `components/creator/AllocationManager.tsx`
 - `components/creator/UpdateForm.tsx`

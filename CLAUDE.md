@@ -252,7 +252,7 @@ npm run format
   `Notification` models). It compiles, typechecks, and is unit-tested, but was not interactively runtime-executed here; live DB-layer paths are verified against the linked Neon database (migrations applied). Pure rules live in
   lib/services/following-rules.ts (unit-tested in following-rules.test.ts);
   persistence in lib/db/repositories/{follow,notification}-repository.ts;
-  actions in app/(learner)/following/actions.ts; learner UI under
+  actions in app/(learner)/learner/following/actions.ts; learner UI under
   /learner/following and /learner/notifications. Following applies to
   DB-backed PUBLISHED strategies (Phase 6 creator strategies), not the Phase 5/7
   sample-data marketing pages. Notifications fan out to followers only for
@@ -264,7 +264,7 @@ npm run format
   lib/services/portfolio-rules.ts (unit-tested in portfolio-rules.test.ts);
   ownership-checked persistence in
   lib/db/repositories/portfolio-repository.ts; actions in
-  app/(learner)/portfolio/actions.ts; learner UI under /learner/portfolio.
+  app/(learner)/learner/portfolio/actions.ts; learner UI under /learner/portfolio.
   Everything is clearly hypothetical (simulated capital + illustrative model
   returns; no real money or execution). Allocations target DB-backed PUBLISHED
   strategies and the total is capped at 100%. Manual decisions are stored as
@@ -280,7 +280,7 @@ npm run format
   deterministic rules live in lib/services/academy-rules.ts (unit-tested in
   academy-rules.test.ts); per-user persistence in
   lib/db/repositories/academy-repository.ts; actions in
-  app/(learner)/academy/actions.ts; learner UI under /learner/academy (catalog,
+  app/(learner)/learner/academy/actions.ts; learner UI under /learner/academy (catalog,
   course detail with progress bar, lesson content + complete toggle + prev/next).
   Content is educational only — never personalized advice nor a guarantee.
   DESIGN NOTE (lesson identity): `Progress.lessonId` stores the curriculum's

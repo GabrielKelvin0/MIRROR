@@ -1,5 +1,29 @@
 # PROJECT STATUS — MIRROR
-**As of: 2026-09-02**
+**As of: 2026-09-02** (body below is a snapshot from that date)
+
+---
+
+## Phase 17C update — 2026-09-08 (routing & deployment repair)
+
+The Vercel staging attempt (Phase 17B) failed because route groups do not add
+URL segments, so protected pages collided (`/dashboard`, `/strategies`). That
+is repaired: protected routes now live under real segments — `/learner/*`,
+`/creator/*`, `/admin/*` (e.g. `app/(learner)/learner/dashboard/page.tsx`).
+Public discovery remains `/strategies`; admin moderation is `/admin/strategies`.
+
+CI now requires the production build (`npm run build`, no `continue-on-error`)
+plus a route-structure guard (`npm run check:routes`). Conservative security
+headers were added, and app-level error/not-found pages now exist.
+
+Status: static checks pass locally; runtime/browser testing is still pending a
+successful Vercel staging redeployment with Clerk and Neon environment
+variables configured. Do not treat the snapshot body below as current
+completion status — see TESTING_CHECKLIST.md and ARCHITECTURE.md for the route
+map and verification state.
+
+---
+
+
 
 ---
 

@@ -6,7 +6,7 @@ import { createPortfolio, type ActionResult } from "@/app/(learner)/learner/port
 const initialState: ActionResult = { error: undefined };
 
 export function PortfolioCreateForm() {
-  const [state, formAction, pending] = useActionState(createPortfolio(), initialState);
+  const [state, formAction, pending] = useActionState(createPortfolio, initialState);
 
   return (
     <form action={formAction} className="space-y-4">

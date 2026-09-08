@@ -16,7 +16,7 @@ type Props = {
 const initialState: ActionResult = { error: undefined };
 
 export function FollowButton({ strategyId, strategyName, isFollowing }: Props) {
-  const action = isFollowing ? unfollowStrategy(strategyId) : followStrategy(strategyId);
+  const action = isFollowing ? unfollowStrategy.bind(null, strategyId) : followStrategy.bind(null, strategyId);
   const [state, formAction, pending] = useActionState(action, initialState);
 
   const cls = isFollowing

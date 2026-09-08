@@ -14,7 +14,7 @@ export function LessonCompleteButton({
   lessonSlug,
   initiallyComplete,
 }: LessonCompleteButtonProps) {
-  const toggle = setLessonCompletion(courseSlug, lessonSlug);
+  const toggle = setLessonCompletion.bind(null, courseSlug, lessonSlug);
   const [state, formAction, pending] = useActionState<ActionResult, FormData>(
     toggle,
     { error: undefined }

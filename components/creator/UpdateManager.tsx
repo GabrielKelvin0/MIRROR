@@ -21,7 +21,7 @@ type Props = {
 const initialState = { error: undefined as string | undefined };
 
 export function UpdateManager({ strategyId, updates }: Props) {
-  const [state, formAction, pending] = useActionState(addUpdate(strategyId), initialState);
+  const [state, formAction, pending] = useActionState(addUpdate.bind(null, strategyId), initialState);
 
   return (
     <div>

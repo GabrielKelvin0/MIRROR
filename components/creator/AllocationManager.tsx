@@ -18,7 +18,7 @@ type Props = {
 const initialState = { error: undefined as string | undefined };
 
 function AddAllocationForm({ strategyId }: { strategyId: string }) {
-  const [state, formAction, pending] = useActionState(addAllocation(strategyId), initialState);
+  const [state, formAction, pending] = useActionState(addAllocation.bind(null, strategyId), initialState);
   return (
     <div className="mt-4 rounded-lg border border-neutral-200 bg-neutral-50 p-4">
       <form action={formAction} className="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -86,7 +86,7 @@ function DeleteAllocationButton({
   allocationId: string;
 }) {
   const [state, formAction, pending] = useActionState(
-    deleteAllocation(strategyId, allocationId),
+    deleteAllocation.bind(null, strategyId, allocationId),
     initialState
   );
   return (

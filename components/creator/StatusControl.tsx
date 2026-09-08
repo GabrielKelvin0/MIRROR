@@ -47,12 +47,12 @@ export function StatusControl({ strategyId, status }: Props) {
   return (
     <div className="flex flex-wrap gap-3">
       {status === "DRAFT" ? (
-        <StatusButton action={changeStatus(strategyId, "PUBLISHED")} tone="publish">
+        <StatusButton action={changeStatus.bind(null, strategyId, "PUBLISHED")} tone="publish">
           Publish
         </StatusButton>
       ) : null}
       {status !== "ARCHIVED" ? (
-        <StatusButton action={changeStatus(strategyId, "ARCHIVED")} tone="archive">
+        <StatusButton action={changeStatus.bind(null, strategyId, "ARCHIVED")} tone="archive">
           Archive
         </StatusButton>
       ) : null}

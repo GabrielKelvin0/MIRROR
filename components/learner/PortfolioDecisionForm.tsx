@@ -10,7 +10,7 @@ type Props = {
 const initialState: ActionResult = { error: undefined };
 
 export function PortfolioDecisionForm({ portfolioId }: Props) {
-  const [state, formAction, pending] = useActionState(recordDecision(portfolioId), initialState);
+  const [state, formAction, pending] = useActionState(recordDecision.bind(null, portfolioId), initialState);
 
   return (
     <form action={formAction} className="space-y-4">

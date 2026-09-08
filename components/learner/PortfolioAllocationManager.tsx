@@ -33,7 +33,7 @@ function AllocationRow({
   allocation: AllocationEntry;
 }) {
   const [state, formAction, pending] = useActionState(
-    removeStrategy(portfolioId, allocation.strategyId),
+    removeStrategy.bind(null, portfolioId, allocation.strategyId),
     initialState
   );
 
@@ -71,7 +71,7 @@ export function PortfolioAllocationManager({
   allocations,
   availableStrategies,
 }: Props) {
-  const [state, formAction, pending] = useActionState(addStrategy(portfolioId), initialState);
+  const [state, formAction, pending] = useActionState(addStrategy.bind(null, portfolioId), initialState);
 
   return (
     <div className="space-y-6">

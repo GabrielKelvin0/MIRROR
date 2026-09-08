@@ -73,6 +73,10 @@ function routeFor(file) {
   const rel = relative(APP_DIR, file).split(sep);
   const segments = rel
     .filter((segment) => !(segment.startsWith("(") && segment.endsWith(")")))
+    // Optional catch-all segments ([[...x]]) match zero URL segments, so they
+    // contribute nothing to the resolved route (e.g. sign-in/sso-callback is
+    // handled by the same [[...sign-in]] page as /sign-in).
+    .filter((segment) => !/^\[\[\.\.\..+\]\]$/.test(segment))
     .filter((segment) => !/^(page|route)\.(ts|tsx|js|jsx)$/.test(segment));
   return "/" + segments.join("/");
 }

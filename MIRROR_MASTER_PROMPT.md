@@ -508,6 +508,112 @@ Before declaring the MVP complete:
 
 Never claim a check passed unless you actually ran it.
 
+## PHASE 18 — UNIFIED STRATEGY LIFECYCLE (PROPOSED FUTURE WORK)
+
+Added 2026-09-08 from the full-site gap analysis. This phase is PROPOSED
+FUTURE WORK and is not yet approved. Do not start it until explicitly
+approved. Phase 17 (Final Review) remains a release gate and should be run
+after the site build, not before it.
+
+Why it comes next:
+
+- The central MIRROR loop is split: public /strategies shows typed sample data
+  (lib/data/strategies.ts) while creators publish real DB strategies that never
+  appear publicly, so learners cannot follow or allocate what they discover.
+- Closing this gap first makes later work (creator profiles, structured
+  decision history, portfolio maturity, admin verification) build on one
+  strategy source of truth.
+
+Objective:
+
+- Make the strategy lifecycle end-to-end: a creator-published strategy appears
+  in public discovery/detail and can be followed and allocated by learners.
+
+In scope:
+
+- Public listing and detail of PUBLISHED Prisma strategies.
+- Detail presents thesis, methodology, risk, allocation, updates, and
+  performance context in MIRROR's defined hierarchy.
+- Creator publish -> public visibility; learner follow/allocate against the
+  same DB strategy.
+- Safe empty/fallback states when no DB content exists.
+- Repository/action unit tests for publish -> list -> follow.
+
+Out of scope:
+
+- New dashboards, UI redesign, payments.
+- Structured Decision model/history (separate later phase).
+- Academy curriculum migration (separate later phase).
+- Migrations without explicit approval.
+
+Likely files/modules:
+
+- app/(public)/strategies/**
+- lib/db/repositories/strategy-repository.ts
+- learner following/portfolio wiring
+- relevant marketing components and tests
+
+Schema impact:
+
+- None expected initially. A seed/fallback policy may be proposed, but no
+  schema change without the schema-change protocol.
+
+Security considerations:
+
+- Only PUBLISHED strategies are exposed publicly.
+- No private or creator-only fields leak to public pages.
+- Ownership and role checks remain server-side; layouts unchanged.
+
+Tests required:
+
+- Published-strategy visibility.
+- Unpublished/archived exclusion.
+- Follow and allocate against a DB strategy.
+- Empty-state behavior.
+
+Acceptance criteria:
+
+- A strategy published by a creator appears in public discovery/detail.
+- The same strategy can be followed and allocated by a learner.
+- Sample content no longer masquerades as DB objects.
+- Static gates pass: prisma validate, typecheck, lint, tests, check:routes,
+  and the production build.
+
+## PHASES 19-25 — REMAINING SITE BUILD (PROPOSED FUTURE WORK)
+
+Follow-on build phases from the same gap analysis, in recommended order. Each
+is PROPOSED FUTURE WORK until approved; do not start a later phase before the
+previous one is complete and approved.
+
+- PHASE 19 - PUBLIC CREATOR IDENTITY: public creator directory and profiles
+  (methodology, published strategies, disclosures) so learners can evaluate
+  the thinker. No private-field leakage. Depends on Phase 18.
+- PHASE 20 - STRUCTURED DECISION HISTORY: implement the differentiator -
+  structured change records (what changed, why, evidence, risk/assumption
+  changes, allocation delta) shown chronologically. Likely new schema; requires
+  the schema-change protocol.
+- PHASE 21 - ACADEMY ARCHITECTURE RESOLUTION: DB-backed curriculum using
+  deterministic courseSlug/lessonSlug identifiers; public Academy entry;
+  reconcile the deferred Progress.lessonId FK decision. Schema review required.
+- PHASE 22 - PAPER PORTFOLIO MATURITY: allocation-change history, rebalance
+  explanation, richer simulated-holdings detail; keep hypothetical labeling.
+- PHASE 23 - ADMIN/MODERATION COMPLETION: report submission from
+  learner/creator surfaces, moderation actions, creator verification workflow.
+  ADMIN-only mutations.
+- PHASE 24 - RESEARCH/CONTENT EXPERIENCE: DB-backed research with an
+  authoring/admin path so /research grows beyond sample articles. Likely new
+  schema; approval required.
+- PHASE 25 - CROSS-PRODUCT INTEGRATION: navigation/notifications across new
+  actions, consistent empty/loading/error states, documentation reconciliation.
+
+Deferred until stabilization (do not schedule as build phases):
+
+- Full Creator/Admin/mobile/accessibility browser runtime verification.
+- Full browser E2E regression.
+- Final security audit.
+- Production database/Clerk/Vercel readiness.
+- Release-candidate verification and the Phase 17 final-review gate.
+
 ## IMPLEMENTATION DISCIPLINE
 
 For every task:

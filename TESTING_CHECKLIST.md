@@ -178,3 +178,26 @@ passing browser-test results.
 - **Runtime/browser testing is still pending.** Sections A–G above must not be
   marked PASS until a staging deployment serves the repaired routes and each
   case is observed in a real browser. Status cells above remain blank.
+
+## J. Phase 17B closeout — 2026-09-08 (runtime verification record)
+
+Recorded at Phase 17B closeout. Confirmed on the live Vercel staging
+deployment (`main` @ `90ccee2`):
+
+- GitHub `main` healthy; Vercel deployment live; the Prisma build/deployment
+  issue (`prisma generate` before `next build`) is fixed.
+- Clerk Google SSO works; `/sign-in/sso-callback` is served by the Clerk
+  sign-in page (optional catch-all route `app/(auth)/sign-in/[[...sign-in]]`).
+- Signed-out requests to `/learner/*`, `/creator/*`, `/admin/*` are redirected
+  to Clerk sign-in (middleware + server-side `requireRole` remain in place).
+- Authenticated redirect lands on `/learner/dashboard`.
+- Learner runtime flows (dashboard, academy browse/lessons, following,
+  notifications, paper portfolios, allocations, decisions, subscription) were
+  manually verified in Chrome against the Neon staging branch
+  `phase-17b-testing` (`br-shiny-feather-aeilw4nx`).
+- Codex static quality gates passed; no production-data writes were required.
+
+Rows in sections C (creator), D (admin), F (mobile widths), and G (keyboard /
+screen-reader) remain unmarked and are NOT claimed as passed until each is
+observed in a real browser. The Phase 17B "staging deployment readiness"
+section H and the Phase 17C repair record (section I) remain accurate history.

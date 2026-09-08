@@ -3,6 +3,22 @@
 
 ---
 
+## Phase 17B runtime verification — COMPLETE (2026-09-08)
+
+Vercel staging deployment is live and healthy on main (`90ccee2`). Confirmed
+in runtime verification:
+
+- GitHub main healthy; Vercel deployment live; Prisma build/deployment issue fixed
+- Clerk Google SSO works and `/sign-in/sso-callback` renders through the Clerk page
+- Signed-out protected routing redirects to Clerk sign-in; authenticated redirect lands on `/learner/dashboard`
+- Learner runtime flows verified manually in Chrome against the Neon staging branch `phase-17b-testing` (`br-shiny-feather-aeilw4nx`)
+- Codex static quality gates pass; no production-data writes were required
+
+Remaining unrecorded browser checks (TESTING_CHECKLIST rows C, D, F, G) stay
+unmarked until observed.
+
+---
+
 ## Phase 17C update — 2026-09-08 (routing & deployment repair)
 
 The Vercel staging attempt (Phase 17B) failed because route groups do not add
@@ -15,9 +31,9 @@ CI now requires the production build (`npm run build`, no `continue-on-error`)
 plus a route-structure guard (`npm run check:routes`). Conservative security
 headers were added, and app-level error/not-found pages now exist.
 
-Status: static checks pass locally; runtime/browser testing is still pending a
-successful Vercel staging redeployment with Clerk and Neon environment
-variables configured. Do not treat the snapshot body below as current
+Status at the time of writing: static checks passed locally. Runtime/browser
+testing has since completed on the Vercel staging deployment — see the
+Phase 17B completion section above. Do not treat the snapshot body below as current
 completion status — see TESTING_CHECKLIST.md and ARCHITECTURE.md for the route
 map and verification state.
 

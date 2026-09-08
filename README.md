@@ -169,6 +169,8 @@ MIRROR is built in phases. Current status:
 - ✅ **Phase 16 (Testing):** Expanded automated coverage for the highest-value risk areas — the authorization choke-point (`lib/auth/session.ts`, now 8 tests), role guards (`hasRole` strict equality), strategy publish/update rules (self-transition, whitespace, weight boundaries), entitlement `strategyAccess` (paid strategies denied even to the highest tier without a subscription), portfolio calc edge cases (NaN inputs, allocation-total boundaries), performance data-quality handling (zero-value/constant series), and every `AppError` subclass. Suite grew from 126 to 163 tests across 10 files.
 - ✅ **Phase 16+ (post-16 work):** Neon Postgres connected and initial migration applied; admin management and research flows; Academy progress decoupled from the Lesson FK until the curriculum is DB-backed
 - ✅ **Phase 17A (Pre-Testing Readiness):** real GitHub Actions CI, environment/config reconciliation, and TESTING_CHECKLIST.md added — no new product features
+- ✅ **Phase 17C (Deployment repair & hardening):** fixed App Router route collisions (protected pages now live under real `/learner/*`, `/creator/*`, `/admin/*` segments), made the production build a REQUIRED CI gate, added the route-collision guard (`npm run check:routes`), error/not-found UI, conservative security headers, Next.js 15 async server actions, `prisma generate` inside the build, and Clerk optional catch-all auth routes so `/sign-in/sso-callback` works
+- ✅ **Phase 17B (Staging deployment & runtime verification):** Vercel staging deployment live and healthy; Clerk Google SSO, `/sign-in/sso-callback`, signed-out protected routing, authenticated redirect to `/learner/dashboard`, and learner runtime flows verified in Chrome against the Neon staging branch `phase-17b-testing` — no production-data writes
 
 Phase work is tracked in MIRROR_MASTER_PROMPT.md (Phases 0–17); product
 requirements are sourced from MIRROR_SPEC.md.
@@ -254,7 +256,7 @@ TBD
 
 ## Status
 
-**Phase 17A (Pre-Testing Readiness) complete — MIRROR is ready for Phase 17B (staging deployment and real browser testing)**
+**Phase 17B runtime verification complete (2026-09-08) — staging deployment is healthy on Vercel; production release remains a separate decision**
 
 Clerk authentication is active (development keys), `/learner/*`, `/creator/*`,
 and `/admin/*` are protected by middleware plus server-side role checks, new
@@ -264,9 +266,7 @@ project: the initial migration and the Academy progress-FK migration are
 applied and the schema is up to date. GitHub Actions CI
 (`.github/workflows/ci.yml`) runs Prisma generate/validate, typecheck, lint,
 and the 163-test suite; it never applies migrations and never writes to any
-database. Automated checks pass; interactive browser verification has not
-been run yet (this container's `next`/SWC crashes with SIGBUS) —
-TESTING_CHECKLIST.md defines the Phase 17B smoke tests.
+database. Automated checks pass, and the production build now runs `prisma generate` before `next build`. Interactive browser/runtime verification for Phase 17B is complete against the Vercel staging deployment (Clerk Google SSO, `/sign-in/sso-callback`, signed-out protected routing, authenticated redirect to `/learner/dashboard`, and learner flows verified in Chrome; Neon staging branch `phase-17b-testing`; no production-data writes). TESTING_CHECKLIST.md defines the smoke tests and the closeout record.
 
 ### Verification status
 
@@ -274,5 +274,5 @@ TESTING_CHECKLIST.md defines the Phase 17B smoke tests.
 - **Statically verified** — typecheck and lint pass (no running app)
 - **DB-layer verified** — Prisma schema and migrations checked against the linked Neon database (no destructive operations)
 - **Automated-test verified** — unit tests pass (163 tests / 10 files)
-- **Browser/runtime verified** — not yet: requires a working Next.js runtime (staging/preview)
-- **Not yet verified** — production build output, live interaction, mobile/accessibility browser checks
+- **Browser/runtime verified** — Phase 17B: Vercel staging deployment served the app; Clerk Google SSO and `/sign-in/sso-callback`, signed-out protected routing, authenticated redirect to `/learner/dashboard`, and learner flows verified in Chrome against the Neon staging branch `phase-17b-testing`
+- **Not yet recorded** — TESTING_CHECKLIST rows for creator (C) and admin (D) flows, mobile widths (F), and keyboard/screen-reader (G) remain unmarked until observed

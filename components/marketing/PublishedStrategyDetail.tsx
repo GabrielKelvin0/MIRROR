@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { PublishedStrategyDetail as PublicStrategyDetailData } from "@/lib/db/repositories/strategy-repository";
 import {
   creatorDisplayName,
@@ -196,9 +197,18 @@ export function PublishedStrategyDetail({ strategy }: { strategy: PublicStrategy
 
       <section className="mt-8 rounded-xl border border-neutral-200 bg-white p-6">
         <h2 className="text-lg font-semibold text-neutral-900">Creator</h2>
-        <p className="mt-1 text-lg font-medium text-neutral-800">
-          {creatorDisplayName(creator?.firstName, creator?.lastName)}
-        </p>
+        {creator?.id ? (
+          <Link
+            href={"/creators/" + creator.id}
+            className="mt-1 inline-block text-lg font-medium text-neutral-800 hover:text-emerald-700"
+          >
+            {creatorDisplayName(creator?.firstName, creator?.lastName)}
+          </Link>
+        ) : (
+          <p className="mt-1 text-lg font-medium text-neutral-800">
+            {creatorDisplayName(creator?.firstName, creator?.lastName)}
+          </p>
+        )}
         <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-neutral-600">
           {profile?.isVerified ? (
             <span className="rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">
@@ -217,6 +227,14 @@ export function PublishedStrategyDetail({ strategy }: { strategy: PublicStrategy
           <p className="mt-3 text-sm italic text-neutral-600">{profile.investmentPhilosophy}</p>
         ) : null}
         {profile?.bio ? <p className="mt-2 text-sm text-neutral-600">{profile.bio}</p> : null}
+        {creator?.id ? (
+          <Link
+            href={"/creators/" + creator.id}
+            className="mt-3 inline-block text-sm font-medium text-emerald-700 hover:text-emerald-800"
+          >
+            View public profile →
+          </Link>
+        ) : null}
       </section>
 
       <div className="mt-8 rounded-xl border border-neutral-200 bg-neutral-50 p-6 text-xs leading-relaxed text-neutral-500">

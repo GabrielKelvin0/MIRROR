@@ -585,9 +585,11 @@ Follow-on build phases from the same gap analysis, in recommended order. Each
 is PROPOSED FUTURE WORK until approved; do not start a later phase before the
 previous one is complete and approved.
 
-- PHASE 19 - PUBLIC CREATOR IDENTITY: public creator directory and profiles
-  (methodology, published strategies, disclosures) so learners can evaluate
-  the thinker. No private-field leakage. Depends on Phase 18.
+- PHASE 19 - PUBLIC CREATOR IDENTITY (IMPLEMENTED 2026-09-08): public creator
+  directory (/creators) and DB-native profiles (/creators/[id]) with
+  verification, about/approach, joined context, and PUBLISHED strategy history;
+  no private-field leakage; no fabricated metadata or follower numbers;
+  strategy details link to the creator profile.
 - PHASE 20 - STRUCTURED DECISION HISTORY: implement the differentiator -
   structured change records (what changed, why, evidence, risk/assumption
   changes, allocation delta) shown chronologically. Likely new schema; requires

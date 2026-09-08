@@ -10,3 +10,4 @@ export { academyRepository } from "./repositories/academy-repository";
 export { subscriptionRepository } from "./repositories/subscription-repository";
 
 export { adminRepository } from "./repositories/admin-repository";
+export { publicCreatorRepository } from "./repositories/public-creator-repository";

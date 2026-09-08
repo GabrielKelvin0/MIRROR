@@ -28,6 +28,7 @@ Public:
 - `/` — marketing homepage
 - `/about`, `/how-it-works` — marketing pages
 - `/strategies`, `/strategies/[slug]` — strategy blueprint discovery
+- `/creators`, `/creators/[id]` — public creator directory and profiles
 - `/research`, `/research/[slug]` — research articles
 - `/sign-in`, `/sign-up` — Clerk auth (route group `(auth)`)
 
@@ -86,8 +87,10 @@ URLs. `scripts/check-routes.mjs` (npm run check:routes) guards this structure in
 
 - Phase 18: public discovery/detail of PUBLISHED creator-authored strategies — `/strategies` lists live strategies from creators (kept separate from labeled sample models), and `/strategies/[id]` renders the creator's DB-backed thesis, methodology/decision rules, risk and exit conditions, target allocation, update & decision history, creator profile, and any model performance context; learner following links into these public detail pages — DB-native public rendering is intentional: sample blueprint UI is unchanged, and mapping published strategies into it would require fabricating category/tagline/region metadata that is not stored in the database
 
-**Planned (future phases, not yet built):** pricing, go-to-market, public
-creator profiles/directory, academy overview, paper-portfolio demo.
+- Phase 19: public creator identity — `/creators` directory (CREATOR role + profile + at least one PUBLISHED strategy) and `/creators/[id]` DB-native profiles (identity, verification state, about/approach, joined context, PUBLISHED strategies). Unknown or non-creator identifiers 404; LEARNER/ADMIN are never listed; drafts are never exposed; no fabricated fields, fake follower numbers, or performance ranking; strategy details link to the creator's public profile
+
+**Planned (future phases, not yet built):** pricing, go-to-market, academy
+overview, paper-portfolio demo.
 
 **Components:** `components/marketing/` (Navbar, Footer, Hero, SectionHeading,
 StrategyCard, StrategyBlueprint, MethodologyFlow, CTA). No DB access, no user

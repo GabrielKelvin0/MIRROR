@@ -148,20 +148,48 @@ model StrategyAllocation {
 model StrategyUpdate {
   id String @id @default(cuid())
   strategyId String
+  kind StrategyUpdateKind @default(UPDATE)
   title String @db.VarChar(255)
   description String @db.Text
   changesSummary String? @db.Text // e.g., "Reduced technology exposure from 25% to 15%"
   reasoning String? @db.Text // Why the change was made
   riskAssessment String? @db.Text // Impact of the change
+  evidence String? @db.Text // Supporting evidence for DECISION kind
+  assumptionChanges String? @db.Text // Assumption/thesis changes for DECISION kind
   effectiveDate DateTime
   createdAt DateTime @default(now())
 
   // Relationships
   strategy Strategy @relation(fields: [strategyId], references: [id], onDelete: Cascade)
   notifications Notification[] @relation("UpdateNotifications")
+  allocationDeltas StrategyUpdateAllocationDelta[]
 
   @@index([strategyId])
   @@index([effectiveDate])
+  @@index([kind])
+}
+
+enum StrategyUpdateKind {
+  UPDATE
+  DECISION
+}
+
+// ============================================================================
+// STRATEGY UPDATE ALLOCATION DELTA
+// ============================================================================
+
+model StrategyUpdateAllocationDelta {
+  id String @id @default(cuid())
+  strategyUpdateId String
+  assetClass String @db.VarChar(100) // Immutable snapshot of allocation identity
+  beforePercentage Float? // Null if new allocation
+  afterPercentage Float? // Null if removed allocation
+  createdAt DateTime @default(now())
+
+  // Relationships
+  strategyUpdate StrategyUpdate @relation(fields: [strategyUpdateId], references: [id], onDelete: Cascade)
+
+  @@index([strategyUpdateId])
 }
 
 // ============================================================================

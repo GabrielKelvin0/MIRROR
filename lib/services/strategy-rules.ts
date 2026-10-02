@@ -3,20 +3,15 @@
  *
  * This module contains ONLY pure functions: input validation and strategy
  * status/state logic. It has no database or I/O dependency, so it can be
- * unit-tested in isolation (see strategy-rules.test.ts).
- *
- * Server-side authorization and ownership are enforced in the repository and
- * server actions, not here. These functions validate shape, not identity.
+ * unit-tested in isolation.
  */
 
-import type { StrategyStatus } from "@prisma/client";
+import type { StrategyStatus, StrategyUpdateKind } from "@prisma/client";
 import { ValidationError, BusinessRuleError } from "@/lib/errors";
 
-/** Risk profiles accepted on a Strategy record. */
 export const RISK_PROFILES = ["LOW", "MODERATE", "HIGH"] as const;
 export type RiskProfile = (typeof RISK_PROFILES)[number];
 
-/** Allowed status transitions (source -> target). */
 export const ALLOWED_TRANSITIONS: Record<StrategyStatus, StrategyStatus[]> = {
   DRAFT: ["PUBLISHED", "ARCHIVED"],
   PUBLISHED: ["ARCHIVED"],
@@ -37,7 +32,35 @@ export interface StrategyInput {
   invalidatingConditions?: string;
 }
 
-/** Normalized (validated) strategy fields. Blank text is stored as null. */
+export interface AllocationInput {
+  assetClass?: string;
+  targetWeight?: number;
+  reasoning?: string;
+}
+
+export interface StrategyUpdateInput {
+  title?: string;
+  description?: string;
+  changesSummary?: string;
+  reasoning?: string;
+  riskAssessment?: string;
+  effectiveDate?: Date;
+  evidence?: string;
+  assumptionChanges?: string;
+  kind?: StrategyUpdateKind;
+}
+
+export interface AllocationDeltaInput {
+  assetClass?: string;
+  beforePercentage?: number | null;
+  afterPercentage?: number | null;
+}
+
+export interface StructuredDecisionInput extends StrategyUpdateInput {
+  kind?: "DECISION";
+  allocationChanges?: AllocationDeltaInput[];
+}
+
 export interface NormalizedStrategyData {
   name: string;
   description: string | null;
@@ -52,32 +75,18 @@ export interface NormalizedStrategyData {
   invalidatingConditions: string | null;
 }
 
-export interface AllocationInput {
-  assetClass?: string;
-  targetWeight?: number;
-  reasoning?: string;
-}
-
-export interface StrategyUpdateInput {
-  title?: string;
-  description?: string;
-  changesSummary?: string;
-  reasoning?: string;
-  riskAssessment?: string;
-  effectiveDate?: Date;
-}
-
-/** Normalized (validated) strategy update fields. Blank text is stored as null. */
 export interface NormalizedStrategyUpdate {
   title: string;
   description: string;
   changesSummary: string | null;
   reasoning: string | null;
   riskAssessment: string | null;
+  evidence: string | null;
+  assumptionChanges: string | null;
   effectiveDate: Date;
+  kind: StrategyUpdateKind;
 }
 
-/** Trim and normalize a single text input, or return null when blank. */
 function text(value: string | null | undefined): string | null {
   if (value == null) return null;
   const trimmed = value.trim();
@@ -92,12 +101,14 @@ function isRiskProfile(value: string | null | undefined): boolean {
   return value != null && (RISK_PROFILES as readonly string[]).includes(value.trim().toUpperCase());
 }
 
-/** Is a strategy publishable? A name and a risk profile are required. */
+function isFinitePercentage(value: number | null | undefined): value is number {
+  return value != null && Number.isFinite(value) && value >= 0 && value <= 100;
+}
+
 export function isPublishable(input: StrategyInput): boolean {
   return isNonEmpty(input.name) && isRiskProfile(input.riskProfile);
 }
 
-/** Validate and normalize a StrategyInput. Throws ValidationError on bad input. */
 export function validateStrategy(input: StrategyInput): NormalizedStrategyData {
   const name = text(input.name);
   if (!name) {
@@ -126,7 +137,6 @@ export function validateStrategy(input: StrategyInput): NormalizedStrategyData {
   };
 }
 
-/** Validate an allocation input. Weights must be 0–100 and total 100 across a strategy. */
 export function validateAllocation(
   input: AllocationInput,
   currentTotal: number,
@@ -154,7 +164,6 @@ export function validateAllocation(
   }
 }
 
-/** Validate a strategy update input. Title and effective date are required. */
 export function validateStrategyUpdate(input: StrategyUpdateInput): NormalizedStrategyUpdate {
   if (!isNonEmpty(input.title)) {
     throw new ValidationError("Update title is required", { title: "required" });
@@ -165,17 +174,91 @@ export function validateStrategyUpdate(input: StrategyUpdateInput): NormalizedSt
   if (input.effectiveDate == null || Number.isNaN(input.effectiveDate.getTime())) {
     throw new ValidationError("Effective date is required", { effectiveDate: "required" });
   }
+
   return {
     title: text(input.title) as string,
     description: text(input.description) as string,
     changesSummary: text(input.changesSummary),
     reasoning: text(input.reasoning),
     riskAssessment: text(input.riskAssessment),
+    evidence: text(input.evidence),
+    assumptionChanges: text(input.assumptionChanges),
     effectiveDate: input.effectiveDate,
+    kind: input.kind ?? "UPDATE",
   };
 }
 
-/** Throw BusinessRuleError if `from -> to` is not an allowed transition. */
+export function validateStructuredDecision(
+  input: StructuredDecisionInput
+): NormalizedStrategyUpdate & { allocationChanges: AllocationDeltaInput[] } {
+  const base = validateStrategyUpdate(input);
+
+  if (!isNonEmpty(input.changesSummary)) {
+    throw new ValidationError("What changed is required for a structured decision", {
+      changesSummary: "required",
+    });
+  }
+  if (!isNonEmpty(input.reasoning)) {
+    throw new ValidationError("Why it changed is required for a structured decision", {
+      reasoning: "required",
+    });
+  }
+  if (!isNonEmpty(input.evidence)) {
+    throw new ValidationError("Evidence is required for a structured decision", {
+      evidence: "required",
+    });
+  }
+  if (!isNonEmpty(input.riskAssessment)) {
+    throw new ValidationError("Risk assessment is required for a structured decision", {
+      riskAssessment: "required",
+    });
+  }
+  if (input.kind && input.kind !== "DECISION") {
+    throw new ValidationError("Decision kind must be DECISION", { kind: "invalid" });
+  }
+
+  const allocationChanges = input.allocationChanges ?? [];
+  const seen = new Set<string>();
+  for (const change of allocationChanges) {
+    if (!isNonEmpty(change.assetClass)) {
+      throw new ValidationError("Allocation asset class is required", { assetClass: "required" });
+    }
+    const normalizedAsset = change.assetClass!.trim();
+    if (seen.has(normalizedAsset)) {
+      throw new ValidationError(`Duplicate allocation change for ${normalizedAsset}`, {
+        assetClass: "duplicate",
+      });
+    }
+    seen.add(normalizedAsset);
+
+    if (!isFinitePercentage(change.afterPercentage)) {
+      throw new ValidationError("Allocation after-value must be between 0 and 100", {
+        targetWeight: "invalid",
+      });
+    }
+    if (change.beforePercentage != null && !isFinitePercentage(change.beforePercentage)) {
+      throw new ValidationError("Allocation before-value must be between 0 and 100", {
+        targetWeight: "invalid",
+      });
+    }
+    if (
+      change.beforePercentage != null &&
+      change.afterPercentage != null &&
+      change.beforePercentage === change.afterPercentage
+    ) {
+      throw new ValidationError("Allocation before and after values cannot be identical", {
+        targetWeight: "no-change",
+      });
+    }
+  }
+
+  return {
+    ...base,
+    kind: "DECISION",
+    allocationChanges,
+  };
+}
+
 export function assertTransition(from: StrategyStatus, to: StrategyStatus): void {
   const allowed = ALLOWED_TRANSITIONS[from] ?? [];
   if (!allowed.includes(to)) {

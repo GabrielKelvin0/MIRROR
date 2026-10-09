@@ -2,6 +2,7 @@ import Link from "next/link";
 
 const FOOTER_NAV = [
   { href: "/strategies", label: "Strategies" },
+  { href: "/academy", label: "Academy" },
   { href: "/how-it-works", label: "How It Works" },
   { href: "/about", label: "About" },
 ];

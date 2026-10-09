@@ -1,0 +1,61 @@
+image: node:22-bookworm-slim
+
+stages:
+  - verify
+
+variables:
+  NPM_CONFIG_CACHE: "$CI_PROJECT_DIR/.npm"
+  # Safe CI-only placeholders. These are defined so Prisma can generate/validate
+  # and the Next.js build can compile. CI does not run migrations or connect to
+  # this placeholder database.
+  DATABASE_URL: "postgresql://mirror:mirror@localhost:5432/mirror_ci?schema=public"
+  DIRECT_URL: "postgresql://mirror:mirror@localhost:5432/mirror_ci?schema=public"
+
+cache:
+  key: "$CI_COMMIT_REF_SLUG"
+  paths:
+    - .npm/
+
+before_script:
+  - apt-get update -y
+  - apt-get install -y --no-install-recommends openssl ca-certificates
+  - rm -rf /var/lib/apt/lists/*
+
+verify:
+  stage: verify
+  script:
+    - npm ci
+    - npx prisma generate
+    - npx prisma validate
+    - npm run typecheck
+    - npm run lint
+    - npm test
+    - npm run check:routes
+    - npm run build
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+
+# Runtime/production dependencies are a release gate. Development-only
+# advisories are reported separately below because some upstream lint tooling
+# may temporarily have advisories without a patched release.
+production_dependency_audit:
+  stage: verify
+  script:
+    - npm ci
+    - npm audit --omit=dev --audit-level=high
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+
+development_dependency_audit_report:
+  stage: verify
+  script:
+    - npm ci
+    - npm audit --json || true
+  allow_failure: true
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_PIPELINE_SOURCE == "web"'

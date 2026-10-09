@@ -1,17 +1,18 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
-// Protected route prefixes. The marketing/public website and auth pages
-// remain public.
+// Match complete role path segments so public routes such as /creators
+// remain public alongside the marketing website and auth pages.
 const isProtectedRoute = createRouteMatcher([
-  "/learner(.*)",
-  "/creator(.*)",
-  "/admin(.*)",
+  "/learner/:path*",
+  "/creator/:path*",
+  "/admin/:path*",
+  "/reports/:path*",
 ]);
 
-export default clerkMiddleware((auth, req) => {
-  const { userId } = auth();
+export default clerkMiddleware(async (auth, req) => {
+  const { userId, redirectToSignIn } = await auth();
   if (isProtectedRoute(req) && !userId) {
-    return auth().redirectToSignIn({ returnBackUrl: req.url });
+    return redirectToSignIn({ returnBackUrl: req.url });
   }
   return undefined;
 });

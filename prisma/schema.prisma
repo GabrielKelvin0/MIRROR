@@ -107,7 +107,6 @@ model Strategy {
   portfolioStrategies PaperPortfolioStrategy[]
   positions PaperPosition[]
   auditLogs AuditLog[]
-
   @@index([creatorId])
   @@index([status])
   @@index([publishedAt])
@@ -154,8 +153,8 @@ model StrategyUpdate {
   changesSummary String? @db.Text // e.g., "Reduced technology exposure from 25% to 15%"
   reasoning String? @db.Text // Why the change was made
   riskAssessment String? @db.Text // Impact of the change
-  evidence String? @db.Text // Supporting evidence for DECISION kind
-  assumptionChanges String? @db.Text // Assumption/thesis changes for DECISION kind
+  evidence String? @db.Text // Supporting evidence for DECISION records
+  assumptionChanges String? @db.Text // Assumption/thesis changes for DECISION records
   effectiveDate DateTime
   createdAt DateTime @default(now())
 
@@ -182,8 +181,8 @@ model StrategyUpdateAllocationDelta {
   id String @id @default(cuid())
   strategyUpdateId String
   assetClass String @db.VarChar(100) // Immutable snapshot of allocation identity
-  beforePercentage Float? // Null if new allocation
-  afterPercentage Float? // Null if removed allocation
+  beforePercentage Float? // Null when the allocation did not previously exist
+  afterPercentage Float? // Null when the allocation was removed
   createdAt DateTime @default(now())
 
   // Relationships
@@ -297,14 +296,35 @@ model PortfolioEvent {
   quantity Float?
   price Float?
   totalValue Float?
+  reasoning String? @db.Text // Learner's explanation, not automated advice
+  allocatedBefore Float? // Null for legacy events with no captured allocation state
+  allocatedAfter Float?
   createdAt DateTime @default(now())
 
   // Relationships
   portfolio PaperPortfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
   position PaperPosition? @relation(fields: [positionId], references: [id], onDelete: SetNull)
+  allocationDeltas PortfolioEventAllocationDelta[]
 
   @@index([portfolioId])
   @@index([eventType])
+  @@index([portfolioId, createdAt])
+}
+
+// Immutable snapshots: deliberately no Strategy FK, so renaming/deleting a
+// strategy cannot rewrite the learner's recorded allocation history.
+model PortfolioEventAllocationDelta {
+  id String @id @default(cuid())
+  portfolioEventId String
+  strategyId String
+  strategyName String @db.VarChar(255)
+  beforePercentage Float? // Null for a new allocation
+  afterPercentage Float? // Null for a removed allocation
+  createdAt DateTime @default(now())
+
+  portfolioEvent PortfolioEvent @relation(fields: [portfolioEventId], references: [id], onDelete: Cascade)
+
+  @@unique([portfolioEventId, strategyId])
 }
 
 enum PortfolioEventType {
@@ -344,11 +364,12 @@ enum CourseLevel {
 }
 
 model Lesson {
-  id String @id @default(cuid())
+  id String @id // Stable courseSlug/lessonSlug; never regenerate for an existing lesson
   courseId String
   slug String @db.VarChar(100)
   title String @db.VarChar(255)
   content String @db.Text // Markdown content
+  contentBlocks Json? // Validated structured content; null preserves legacy text content
   order Int @default(0)
   estimatedMinutes Int? // How long to complete
   createdAt DateTime @default(now())
@@ -356,6 +377,7 @@ model Lesson {
 
   // Relationships
   course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  progress Progress[]
 
   @@index([courseId])
   @@unique([courseId, slug])
@@ -371,9 +393,11 @@ model Progress {
 
   // Relationships
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Restrict, onUpdate: Cascade)
 
   @@unique([userId, lessonId])
   @@index([userId])
+  @@index([lessonId])
   @@index([completed])
 }
 
@@ -467,6 +491,7 @@ model Report {
   reporterId String
   resourceType ResourceType
   resourceId String
+  resourceName String? @db.VarChar(255) // Public label captured at report submission
   reason String @db.VarChar(255)
   description String? @db.Text
   status ReportStatus @default(OPEN)
@@ -479,6 +504,9 @@ model Report {
 
   @@index([status])
   @@index([resourceType])
+  @@index([reporterId, createdAt])
+  @@index([reporterId, resourceType, resourceId, status])
+  @@index([status, createdAt])
 }
 
 enum ResourceType {
@@ -511,6 +539,7 @@ model ModerationAction {
   @@index([adminId])
   @@index([reportId])
   @@index([action])
+  @@index([resourceType, resourceId, createdAt])
 }
 
 enum ModerationActionType {
@@ -531,6 +560,7 @@ model AuditLog {
   action String @db.VarChar(100)
   resourceType String? @db.VarChar(50)
   resourceId String?
+  targetId String? // Immutable polymorphic target; resourceId remains the legacy Strategy link
   changes String? @db.Text // JSON diff
   ipAddress String? @db.VarChar(45)
   userAgent String? @db.Text
@@ -544,4 +574,5 @@ model AuditLog {
   @@index([action])
   @@index([resourceType])
   @@index([createdAt])
+  @@index([resourceType, targetId, createdAt])
 }

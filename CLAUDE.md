@@ -217,6 +217,28 @@ npm run format
 
 ## Known Limitations
 
+Current Phase 23 verification supersedes the earlier container build notes:
+the managed Node 24 environment passes the production build, typecheck, lint,
+and automated tests. The old aarch64 SIGBUS observations below are historical.
+Authenticated Creator/Admin/Learner browser verification remains deferred.
+Phase 22 migration is applied only to Neon staging `phase-17b-testing`; production
+schema, environment, deployment, main branch, and role provisioning are unchanged.
+Allocation changes now include immutable event snapshots and atomic valuation;
+manual notes do not mutate allocations. Recorded holdings remain read-only and
+use recorded quantities/prices; missing prices are unavailable. See
+PHASE_22_VERIFICATION.md for the checks and precise limitations.
+
+Phase 23 adds owner-scoped report submission/centers, administrative review and
+creator verification, and `/admin/audit`. Privileged changes require ADMIN in
+the server action and under the transaction's membership lock, plus an expected
+state and review reason. Data changes and audit history are atomic. Creator
+status writes cannot undo an admin archive; only ADMIN may restore a private
+draft. The additive Phase 23 migration preserves the legacy strategy audit FK
+and original records. Both rollback-only migration modes pass on staging; no
+test identities or persistent role grants remain. The application suite passes
+302 tests in 26 files with 34 route files. See PHASE_23_VERIFICATION.md for the
+current review and preview evidence; authenticated browser checks stay deferred.
+
 - `npm run build` and `next build` fail with a Bus error (`SIGBUS`, exit 135) on
   this aarch64 container — an environment limitation, not a code error. Use
   `npm run typecheck`, `npm test`, and `npm run lint` (ESLint flat config;
@@ -270,25 +292,19 @@ npm run format
   strategies and the total is capped at 100%. Manual decisions are stored as
   REBALANCE portfolio events (the closest existing event type), not a
   fabricated enum.
-- Phase 10 (Academy) is a hybrid: the curriculum is typed sample data in
-  lib/data/curriculum.ts (16 courses across Beginner/Intermediate/Advanced,
-  ~48 lessons, content as a `ContentBlock` union rendered as React, shaped to
-  mirror the Prisma `Course`/`Lesson` models so it can be swapped for DB
-  records without a redesign), and progress is DB-backed (Prisma `Progress`, +
-  `Course`/`Lesson`/`CourseLevel` models from Phase 3). It compiles, typechecks,
-  and is unit-tested, but was not interactively runtime-executed here; live DB-layer paths are verified against the linked Neon database (migrations applied). Pure
-  deterministic rules live in lib/services/academy-rules.ts (unit-tested in
-  academy-rules.test.ts); per-user persistence in
-  lib/db/repositories/academy-repository.ts; actions in
-  app/(learner)/learner/academy/actions.ts; learner UI under /learner/academy (catalog,
-  course detail with progress bar, lesson content + complete toggle + prev/next).
-  Content is educational only — never personalized advice nor a guarantee.
-  DESIGN NOTE (lesson identity): `Progress.lessonId` stores the curriculum's
-  stable "courseSlug/lessonSlug" key and has no FK to `Lesson.id` while the
-  curriculum is typed sample data (FK dropped by migration
-  20260902080805_remove_progress_lesson_fk; duplicates blocked by
-  `@@unique([userId, lessonId])`). When the curriculum moves to the database,
-  progress must be reconciled to real `Lesson` ids and the FK restored.
+- Phase 10 Academy was resolved by Phase 21: curriculum and learner progress are
+  PostgreSQL-backed. `lib/data/curriculum.ts` is seed input only. Runtime pages
+  read the Academy repository, and public `/academy` exposes catalog metadata
+  without learner progress. Existing learner course/lesson URLs remain stable.
+  `Lesson.id` and `Progress.lessonId` share the deterministic courseSlug/lessonSlug
+  key; the reviewed migration preserves completion history, reconciles old IDs,
+  seeds missing content, and restores an indexed FK with delete restriction.
+  Unknown keys or duplicate/conflicting identities abort rather than discard data.
+  Nullable structured JSON content is validated and rendered as escaped React
+  text; legacy content remains available as a plain-text fallback. Completion
+  actions require LEARNER, resolve the server session identity, reject unknown
+  lessons, and sanitize unexpected errors. Authenticated browser completion tests
+  remain deferred separately from automated and DB-layer verification.
 - Phase 11 (Performance & Risk) has no DB dependency. Pure deterministic
   metrics (period return, max drawdown + recovery, annualised volatility,
   benchmark comparison, allocation, correlation) live in

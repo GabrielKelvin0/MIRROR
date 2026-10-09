@@ -6,6 +6,15 @@ import {
   riskProfileLabel,
 } from "@/lib/services/strategy-presentation";
 
+/**
+ * Public detail view for a PUBLISHED, creator-authored strategy.
+ *
+ * Server-rendered only. Content is the creator's own DB-backed fields — thesis,
+ * methodology rules, risk/exit conditions, target allocation, update/decision
+ * history and any model performance the creator supplied. Nothing here is
+ * synthesized or fabricated.
+ */
+
 function Section({ title, body }: { title: string; body?: string | null }) {
   if (!body || body.trim().length === 0) return null;
   return (
@@ -25,7 +34,10 @@ function PerformanceContext({ strategy }: { strategy: PublicStrategyDetailData }
     rows.push({ label: "One year (model)", value: String(strategy.performanceOneYear) + "%" });
   }
   if (strategy.performanceThreeYear !== null) {
-    rows.push({ label: "Three years (model)", value: String(strategy.performanceThreeYear) + "%" });
+    rows.push({
+      label: "Three years (model)",
+      value: String(strategy.performanceThreeYear) + "%",
+    });
   }
   if (strategy.maxDrawdown !== null) {
     rows.push({ label: "Max drawdown (model)", value: String(strategy.maxDrawdown) + "%" });
@@ -47,7 +59,9 @@ function PerformanceContext({ strategy }: { strategy: PublicStrategyDetailData }
       <dl className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
         {rows.map((row) => (
           <div key={row.label} className="rounded-lg bg-white/70 px-3 py-2">
-            <dt className="text-xs font-medium uppercase tracking-wide text-amber-700">{row.label}</dt>
+            <dt className="text-xs font-medium uppercase tracking-wide text-amber-700">
+              {row.label}
+            </dt>
             <dd className="mt-0.5 text-sm font-medium text-amber-900">{row.value}</dd>
           </div>
         ))}
@@ -72,7 +86,9 @@ export function PublishedStrategyDetail({ strategy }: { strategy: PublicStrategy
             Educational blueprint
           </span>
         </div>
-        <h1 className="mt-3 text-3xl font-semibold text-neutral-900 sm:text-4xl">{strategy.name}</h1>
+        <h1 className="mt-3 text-3xl font-semibold text-neutral-900 sm:text-4xl">
+          {strategy.name}
+        </h1>
         {strategy.philosophy ? (
           <p className="mt-3 max-w-2xl text-lg text-neutral-600">{strategy.philosophy}</p>
         ) : null}
@@ -105,8 +121,8 @@ export function PublishedStrategyDetail({ strategy }: { strategy: PublicStrategy
           Target allocation
         </h2>
         <p className="mt-1 text-xs text-neutral-500">
-          Illustrative target weights defined by the creator. Allocations are educational and are not
-          real positions.
+          Illustrative target weights defined by the creator. Allocations are educational and are
+          not real positions.
         </p>
         {strategy.allocations.length === 0 ? (
           <p className="mt-3 text-sm text-neutral-500">No allocations defined yet.</p>
@@ -119,7 +135,9 @@ export function PublishedStrategyDetail({ strategy }: { strategy: PublicStrategy
                     <span className="font-medium text-neutral-900">{line.assetClass}</span>
                     <span className="tabular-nums font-medium">{line.targetWeight}%</span>
                   </div>
-                  {line.reasoning ? <p className="mt-1 text-xs text-neutral-500">{line.reasoning}</p> : null}
+                  {line.reasoning ? (
+                    <p className="mt-1 text-xs text-neutral-500">{line.reasoning}</p>
+                  ) : null}
                 </li>
               ))}
             </ul>
@@ -137,7 +155,9 @@ export function PublishedStrategyDetail({ strategy }: { strategy: PublicStrategy
           assessment for each update.
         </p>
         {strategy.updates.length === 0 ? (
-          <p className="mt-3 text-sm text-neutral-500">The creator has not recorded an update yet.</p>
+          <p className="mt-3 text-sm text-neutral-500">
+            The creator has not recorded an update yet.
+          </p>
         ) : (
           <ol className="mt-6 space-y-6 border-l border-neutral-200 pl-6">
             {strategy.updates.map((update) => (
@@ -146,12 +166,20 @@ export function PublishedStrategyDetail({ strategy }: { strategy: PublicStrategy
                 <p className="text-xs font-semibold uppercase tracking-widest text-neutral-500">
                   {formatDisplayDate(update.effectiveDate)}
                 </p>
-                <p className="mt-1 font-medium text-neutral-900">{update.title}</p>
-                <p className="mt-1 text-sm text-neutral-600">{update.description}</p>
-                {update.kind === "DECISION" ? (
-                  <p className="mt-1 text-xs font-medium uppercase tracking-widest text-emerald-700">
-                    Decision
-                  </p>
+                <div className="mt-1 flex flex-wrap items-center gap-2">
+                  <p className="font-medium text-neutral-900">{update.title}</p>
+                  <span
+                    className={
+                      update.kind === "DECISION"
+                        ? "rounded bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-emerald-700"
+                        : "rounded bg-neutral-100 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-neutral-600"
+                    }
+                  >
+                    {update.kind === "DECISION" ? "Decision" : "Update"}
+                  </span>
+                </div>
+                {update.kind === "UPDATE" ? (
+                  <p className="mt-1 text-sm text-neutral-600">{update.description}</p>
                 ) : null}
                 {update.changesSummary ? (
                   <p className="mt-2 text-sm text-neutral-600">
@@ -166,7 +194,8 @@ export function PublishedStrategyDetail({ strategy }: { strategy: PublicStrategy
                 ) : null}
                 {update.evidence ? (
                   <p className="mt-1 text-sm text-neutral-600">
-                    <span className="font-medium text-neutral-800">Evidence:</span> {update.evidence}
+                    <span className="font-medium text-neutral-800">Evidence:</span>{" "}
+                    {update.evidence}
                   </p>
                 ) : null}
                 {update.riskAssessment ? (
@@ -180,6 +209,32 @@ export function PublishedStrategyDetail({ strategy }: { strategy: PublicStrategy
                     <span className="font-medium text-neutral-800">Assumption changes:</span>{" "}
                     {update.assumptionChanges}
                   </p>
+                ) : null}
+                {update.allocationDeltas.length > 0 ? (
+                  <div className="mt-3 rounded-lg bg-neutral-50 p-3">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                      Allocation changes
+                    </p>
+                    <ul className="mt-2 space-y-2">
+                      {update.allocationDeltas.map((delta) => (
+                        <li
+                          key={delta.id}
+                          className="flex flex-wrap items-center justify-between gap-2 text-sm text-neutral-700"
+                        >
+                          <span className="font-medium text-neutral-900">{delta.assetClass}</span>
+                          <span className="tabular-nums">
+                            {delta.beforePercentage === null
+                              ? "New"
+                              : `${delta.beforePercentage}%`}{" "}
+                            <span aria-hidden="true">→</span>{" "}
+                            {delta.afterPercentage === null
+                              ? "Removed"
+                              : `${delta.afterPercentage}%`}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 ) : null}
               </li>
             ))}
@@ -236,9 +291,9 @@ export function PublishedStrategyDetail({ strategy }: { strategy: PublicStrategy
       <div className="mt-8 rounded-xl border border-neutral-200 bg-neutral-50 p-6 text-xs leading-relaxed text-neutral-500">
         <p>
           MIRROR is an educational platform that shows how experienced investors think before you
-          invest your own money. This strategy and any figures it contains are provided by the creator
-          for education only — they are not investment advice, not a real portfolio, and not a
-          guarantee of any outcome. MIRROR does not execute trades or manage funds.
+          invest your own money. This strategy and any figures it contains are provided by the
+          creator for education only — they are not investment advice, not a real portfolio, and not
+          a guarantee of any outcome. MIRROR does not execute trades or manage funds.
         </p>
       </div>
     </article>

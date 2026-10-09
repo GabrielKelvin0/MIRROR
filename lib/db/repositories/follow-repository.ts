@@ -95,7 +95,12 @@ export class FollowRepository {
    */
   async notifyFollowersOfUpdate(
     strategyId: string,
-    update: { id: string; title: string; description: string }
+    update: {
+      id: string;
+      title: string;
+      description: string;
+      kind?: "UPDATE" | "DECISION";
+    }
   ): Promise<void> {
     const strategy = await prisma.strategy.findFirst({
       where: { id: strategyId },
@@ -116,7 +121,12 @@ export class FollowRepository {
       return;
     }
 
-    const payload = buildUpdateNotification(strategy.name, update);
+    const payload = buildUpdateNotification(
+      strategy.name,
+      update,
+      undefined,
+      update.kind ?? "UPDATE"
+    );
     await notificationRepository.createMany(
       followers.map((follower) => ({
         userId: follower.userId,

@@ -590,18 +590,29 @@ previous one is complete and approved.
   verification, about/approach, joined context, and PUBLISHED strategy history;
   no private-field leakage; no fabricated metadata or follower numbers;
   strategy details link to the creator profile.
-- PHASE 20 - STRUCTURED DECISION HISTORY: implement the differentiator -
-  structured change records (what changed, why, evidence, risk/assumption
-  changes, allocation delta) shown chronologically. Likely new schema; requires
-  the schema-change protocol.
-- PHASE 21 - ACADEMY ARCHITECTURE RESOLUTION: DB-backed curriculum using
+- PHASE 20 - STRUCTURED DECISION HISTORY (IMPLEMENTED 2026-10-07): the existing
+  StrategyUpdate history model now distinguishes UPDATE from DECISION records.
+  Decisions capture what changed, why, evidence, risk implications, optional
+  assumption changes, and immutable allocation before/after snapshots. Allocation
+  mutations and their delta history are persisted atomically from authoritative
+  server-side state; legacy updates remain compatible and are never backfilled
+  with fabricated history.
+- PHASE 21 - ACADEMY ARCHITECTURE RESOLUTION (IMPLEMENTED 2026-10-07): DB-backed curriculum using
   deterministic courseSlug/lessonSlug identifiers; public Academy entry;
   reconcile the deferred Progress.lessonId FK decision. Schema review required.
-- PHASE 22 - PAPER PORTFOLIO MATURITY: allocation-change history, rebalance
-  explanation, richer simulated-holdings detail; keep hypothetical labeling.
-- PHASE 23 - ADMIN/MODERATION COMPLETION: report submission from
-  learner/creator surfaces, moderation actions, creator verification workflow.
-  ADMIN-only mutations.
+- PHASE 22 - PAPER PORTFOLIO MATURITY (IMPLEMENTED 2026-10-07): atomic allocation-change
+  history with immutable before/after snapshots, required rebalance explanations,
+  stale-form rejection, and clearer simulated target capital/reserve and recorded
+  holdings detail. Unknown prices remain unavailable; legacy notes remain intact.
+  Migration and rollback checks are staging-only; authenticated browser checks
+  remain deferred. See PHASE_22_VERIFICATION.md.
+- PHASE 23 - ADMIN/MODERATION COMPLETION (IMPLEMENTED 2026-10-07): learner/creator
+  report submission and owner-scoped status centers; ADMIN-only case review,
+  strategy moderation, creator verification decisions, role management, and
+  audit history. Transaction role checks, row locks, expected-state guards, and
+  review reasons protect atomic writes. The additive audit/report migration and
+  rollback checks are staging-only; authenticated browser checks remain deferred.
+  See PHASE_23_VERIFICATION.md.
 - PHASE 24 - RESEARCH/CONTENT EXPERIENCE: DB-backed research with an
   authoring/admin path so /research grows beyond sample articles. Likely new
   schema; approval required.

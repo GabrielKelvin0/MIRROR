@@ -73,8 +73,13 @@ export async function updateStrategy(
       exitConditions: formData.get("exitConditions") as string,
       invalidatingConditions: formData.get("invalidatingConditions") as string,
     });
-    revalidatePath(`/creator/dashboard/strategies/${strategyId}`);
+    revalidatePath(`/creator/dashboard/strategies/${strategyId}/edit`);
+    revalidatePath(`/creator/dashboard/strategies/${strategyId}/preview`);
     revalidatePath("/creator/dashboard");
+    revalidatePath("/strategies");
+    revalidatePath("/creators");
+    revalidatePath("/strategies/[slug]", "page");
+    revalidatePath("/creators/[id]", "page");
     return { error: undefined };
   } catch (err) {
     return { error: messageOf(err) };
@@ -155,6 +160,78 @@ export async function addUpdate(
       description: update.description,
     });
     revalidatePath(`/creator/dashboard/strategies/${strategyId}/edit`);
+    return { error: undefined };
+  } catch (err) {
+    return { error: messageOf(err) };
+  }
+}
+
+/** Publish a structured decision with optional atomic allocation changes. */
+export async function addDecision(
+  strategyId: string,
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const creatorId = await getCreatorId();
+  try {
+    const effectiveDateInput = formData.get("effectiveDate") as string;
+    const removals = new Set<string>();
+    const afterValues = new Map<string, string>();
+
+    for (const [key, rawValue] of formData.entries()) {
+      if (key.startsWith("allocationRemove:") && rawValue === "on") {
+        removals.add(key.slice("allocationRemove:".length));
+      }
+      if (key.startsWith("allocationAfter:")) {
+        afterValues.set(key.slice("allocationAfter:".length), String(rawValue));
+      }
+    }
+
+    const allocationIds = new Set([...afterValues.keys(), ...removals]);
+    const allocationChanges: Array<{
+      allocationId: string;
+      afterPercentage: number | null;
+    }> = [];
+
+    for (const allocationId of allocationIds) {
+      if (removals.has(allocationId)) {
+        allocationChanges.push({ allocationId, afterPercentage: null });
+        continue;
+      }
+
+      const rawValue = afterValues.get(allocationId)?.trim() ?? "";
+      if (rawValue.length === 0) {
+        continue;
+      }
+
+      allocationChanges.push({
+        allocationId,
+        afterPercentage: Number(rawValue),
+      });
+    }
+
+    const decision = await strategyRepository.addStructuredDecision(strategyId, creatorId, {
+      title: formData.get("title") as string,
+      changesSummary: formData.get("changesSummary") as string,
+      reasoning: formData.get("reasoning") as string,
+      evidence: formData.get("evidence") as string,
+      riskAssessment: formData.get("riskAssessment") as string,
+      assumptionChanges: formData.get("assumptionChanges") as string,
+      effectiveDate: effectiveDateInput ? new Date(effectiveDateInput) : undefined,
+      allocationChanges,
+    });
+
+    await followRepository.notifyFollowersOfUpdate(decision.strategyId, {
+      id: decision.id,
+      title: decision.title,
+      description: decision.description,
+      kind: decision.kind,
+    });
+
+    revalidatePath(`/creator/dashboard/strategies/${strategyId}/edit`);
+    revalidatePath(`/strategies/${strategyId}`);
+    revalidatePath("/strategies");
+    revalidatePath("/learner/notifications");
     return { error: undefined };
   } catch (err) {
     return { error: messageOf(err) };

@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth/session";
 import { portfolioRepository } from "@/lib/db";
-import { safeErrorMessage } from "@/lib/errors";
+import { safeErrorMessage, ValidationError } from "@/lib/errors";
+import { validateRebalanceInput } from "@/lib/services/portfolio-maturity";
 import {
   validatePortfolioInput,
   validateAllocationInput,
@@ -31,6 +32,10 @@ async function getLearnerId(): Promise<string> {
 
 function messageOf(err: unknown): string {
   return safeErrorMessage(err);
+}
+
+function numericField(value: FormDataEntryValue | null | undefined): number {
+  return typeof value === "string" && value.trim() ? Number(value) : Number.NaN;
 }
 
 /** Create a new paper portfolio with simulated starting capital. */
@@ -79,7 +84,8 @@ export async function addStrategy(
   try {
     const input = validateAllocationInput({
       strategyId: formData.get("strategyId")?.toString(),
-      allocationPercentage: Number(formData.get("allocationPercentage")),
+      allocationPercentage: numericField(formData.get("allocationPercentage")),
+      reasoning: formData.get("reasoning")?.toString(),
     });
     await portfolioRepository.addStrategyAllocation(portfolioId, userId, input);
     revalidatePath(`/learner/portfolio/${portfolioId}`);
@@ -95,11 +101,50 @@ export async function removeStrategy(
   portfolioId: string,
   strategyId: string,
   _prev: ActionResult,
-  _formData: FormData
+  formData: FormData
 ): Promise<ActionResult> {
   const userId = await getLearnerId();
   try {
-    await portfolioRepository.removeStrategyAllocation(portfolioId, userId, strategyId);
+    await portfolioRepository.removeStrategyAllocation(
+      portfolioId,
+      userId,
+      strategyId,
+      formData.get("reasoning")?.toString()
+    );
+    revalidatePath(`/learner/portfolio/${portfolioId}`);
+    revalidatePath("/learner/portfolio");
+    return { error: undefined };
+  } catch (err) {
+    return { error: messageOf(err) };
+  }
+}
+
+/** Atomically change the existing simulated mix with a learner-authored explanation. */
+export async function rebalancePortfolio(
+  portfolioId: string,
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const userId = await getLearnerId();
+  try {
+    const ids = formData.getAll("strategyId");
+    const weights = formData.getAll("allocationPercentage");
+    const expected = formData.getAll("expectedPercentage");
+    if (ids.length < 1 || ids.length > 100) {
+      throw new ValidationError("A rebalance must contain between 1 and 100 strategy allocations");
+    }
+    if (ids.length !== weights.length || ids.length !== expected.length) {
+      throw new ValidationError("Invalid rebalance allocation fields");
+    }
+    const input = validateRebalanceInput({
+      changes: ids.map((strategyId, index) => ({
+        strategyId: typeof strategyId === "string" ? strategyId : "",
+        allocationPercentage: numericField(weights[index]),
+        expectedPercentage: numericField(expected[index]),
+      })),
+      reasoning: formData.get("reasoning")?.toString(),
+    });
+    await portfolioRepository.rebalance(portfolioId, userId, input);
     revalidatePath(`/learner/portfolio/${portfolioId}`);
     revalidatePath("/learner/portfolio");
     return { error: undefined };

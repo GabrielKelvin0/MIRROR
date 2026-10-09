@@ -1,1 +1,35 @@
-"use client"; import {moderateStrategy} from "../../actions"; export default function StrategyAction({id,status}:{id:string;status:"DRAFT"|"PUBLISHED"|"ARCHIVED"}){const next=status==="DRAFT"?"PUBLISHED":status==="PUBLISHED"?"ARCHIVED":"DRAFT";return <button onClick={async()=>{const r=await moderateStrategy(id,next);if(r.error)alert(r.error);else location.reload()}} className="rounded bg-neutral-900 px-3 py-1 text-xs text-white">{next[0]+next.slice(1).toLowerCase()}</button>}
+"use client";
+import type { StrategyStatus } from "@prisma/client";
+import { moderateStrategy } from "@/app/(admin)/actions";
+import { AdminChangeForm } from "@/components/admin/AdminChangeForm";
+
+export default function StrategyAction({
+  id,
+  status,
+  reportId,
+}: {
+  id: string;
+  status: StrategyStatus;
+  reportId?: string;
+}) {
+  const options =
+    status === "DRAFT"
+      ? [
+          { value: "PUBLISHED", label: "Publish strategy" },
+          { value: "ARCHIVED", label: "Archive strategy" },
+        ]
+      : status === "PUBLISHED"
+        ? [{ value: "ARCHIVED", label: "Archive strategy" }]
+        : [{ value: "DRAFT", label: "Restore to private draft" }];
+  return (
+    <AdminChangeForm
+      key={status}
+      action={moderateStrategy.bind(null, id)}
+      label="Moderate content"
+      field="status"
+      options={options}
+      hidden={{ expectedStatus: status, ...(reportId ? { reportId } : {}) }}
+      help="Archiving removes public visibility. Restoration returns to a private draft; it does not republish content."
+    />
+  );
+}

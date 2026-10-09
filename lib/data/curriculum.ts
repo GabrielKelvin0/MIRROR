@@ -1,25 +1,18 @@
 /**
- * MIRROR — Academy sample curriculum (Phase 10).
+ * MIRROR — approved Academy curriculum seed (originally Phase 10).
  *
- * This module contains TYPED sample (demo) courses and lessons used by the
- * learner Academy. It is intentionally separate from production data: no
- * database records are created for these inside `lib/data` — they are shaped
- * to mirror the Prisma `Course`/`Lesson` models (slug, title, description,
- * level, order, lesson content) so a later phase can swap this typed data for
- * the same-shaped Prisma-backed records without a redesign.
+ * Phase 21 persists this curriculum in a reviewed, versioned migration. Runtime
+ * Academy pages read Course/Lesson records; this module is seed input only and
+ * never supplies a silent fallback or performs database writes.
  *
  * Everything here is educational content only. It is not personalized advice,
  * not a guarantee of any outcome, and never investment guidance tailored to an
  * individual.
  */
 
-export type CourseLevel = "BEGINNER" | "INTERMEDIATE" | "ADVANCED";
+import type { ContentBlock } from "@/lib/services/academy-content";
 
-export type ContentBlock =
-  | { type: "heading"; text: string }
-  | { type: "paragraph"; text: string }
-  | { type: "list"; title?: string; items: string[] }
-  | { type: "callout"; label: string; text: string };
+export type CourseLevel = "BEGINNER" | "INTERMEDIATE" | "ADVANCED";
 
 export interface LessonSample {
   slug: string;
@@ -679,27 +672,3 @@ export const CURRICULUM: CourseSample[] = [
     ],
   },
 ];
-
-/** All courses at the given level, in display order. */
-export function coursesByLevel(level: CourseLevel): CourseSample[] {
-  return CURRICULUM.filter((course) => course.level === level).sort(
-    (a, b) => a.order - b.order
-  );
-}
-
-/** Look up a course by slug, or undefined. */
-export function getCourseSample(slug: string): CourseSample | undefined {
-  return CURRICULUM.find((course) => course.slug === slug);
-}
-
-/** Look up a lesson within a course, or undefined. */
-export function getSampleLesson(
-  courseSlug: string,
-  lessonSlug: string
-): { course: CourseSample; lesson: LessonSample } | undefined {
-  const course = getCourseSample(courseSlug);
-  if (!course) return undefined;
-  const lesson = course.lessons.find((l) => l.slug === lessonSlug);
-  if (!lesson) return undefined;
-  return { course, lesson };
-}

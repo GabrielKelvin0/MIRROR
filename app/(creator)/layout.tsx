@@ -21,8 +21,18 @@ export default async function CreatorLayout({ children }: { children: ReactNode 
         Skip to main content
       </a>
       <header className="border-b border-neutral-200 bg-white">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-          <span className="font-semibold text-neutral-900">MIRROR Creator</span>
+        <div className="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-4">
+            <span className="font-semibold text-neutral-900">MIRROR Creator</span>
+            <nav aria-label="Creator" className="flex gap-3 text-sm">
+              <a href="/creator/dashboard" className="py-2">
+                Strategies
+              </a>
+              <a href="/creator/reports" className="py-2">
+                My reports
+              </a>
+            </nav>
+          </div>
           <SignOutButton>
             <button className="text-sm text-neutral-600 hover:text-neutral-900">Sign out</button>
           </SignOutButton>

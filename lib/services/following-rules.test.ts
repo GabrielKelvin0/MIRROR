@@ -57,6 +57,18 @@ describe("buildUpdateNotification", () => {
     expect(out.message).toBe("Rebalance");
   });
 
+  it("uses decision-specific wording without creating a second notification type", () => {
+    const out = buildUpdateNotification(
+      "The Compounder",
+      { title: "Reduce concentration", description: "Technology allocation changed" },
+      FOLLOW_UPDATE_KIND,
+      "DECISION"
+    );
+    expect(out.kind).toBe(FOLLOW_UPDATE_KIND);
+    expect(out.title).toBe("The Compounder published a decision");
+    expect(out.message).toBe("Reduce concentration");
+  });
+
   it("rejects a blank strategy name", () => {
     expect(() => buildUpdateNotification("   ", { title: "t", description: "d" })).toThrow(
       ValidationError

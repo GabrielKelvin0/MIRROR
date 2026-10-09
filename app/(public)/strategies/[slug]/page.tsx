@@ -6,6 +6,7 @@ import { PublishedStrategyDetail } from "@/components/marketing/PublishedStrateg
 import { FollowButton } from "@/components/learner/FollowButton";
 import { getOptionalAuth } from "@/lib/auth/session";
 import { getStrategyBySlug } from "@/lib/data/strategies";
+import { reportHref } from "@/lib/services/moderation-rules";
 import { followRepository, strategyRepository, userRepository } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
@@ -82,7 +83,13 @@ export default async function StrategyDetailPage({ params }: Props) {
 
       <PublishedStrategyDetail strategy={published} />
 
-      <div className="mt-8 flex items-center gap-4">
+      <div className="mt-8 flex flex-wrap items-center gap-4">
+        <Link
+          href={reportHref("STRATEGY", published.id)}
+          className="rounded-lg border border-neutral-300 px-4 py-3 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
+        >
+          Report content
+        </Link>
         {canFollow ? (
           <FollowButton
             strategyId={published.id}

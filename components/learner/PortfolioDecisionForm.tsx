@@ -10,7 +10,10 @@ type Props = {
 const initialState: ActionResult = { error: undefined };
 
 export function PortfolioDecisionForm({ portfolioId }: Props) {
-  const [state, formAction, pending] = useActionState(recordDecision.bind(null, portfolioId), initialState);
+  const [state, formAction, pending] = useActionState(
+    recordDecision.bind(null, portfolioId),
+    initialState
+  );
 
   return (
     <form action={formAction} className="space-y-4">
@@ -22,7 +25,9 @@ export function PortfolioDecisionForm({ portfolioId }: Props) {
           id="decision-summary"
           name="summary"
           required
-          placeholder="e.g. Rebalanced 10% from growth to conservative"
+          maxLength={500}
+          disabled={pending}
+          placeholder="e.g. Reviewing whether to reduce my growth allocation"
           className="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm"
         />
       </div>
@@ -37,6 +42,8 @@ export function PortfolioDecisionForm({ portfolioId }: Props) {
           id="decision-description"
           name="description"
           rows={2}
+          maxLength={5000}
+          disabled={pending}
           placeholder="Why did you make this decision?"
           className="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm"
         />
@@ -44,9 +51,9 @@ export function PortfolioDecisionForm({ portfolioId }: Props) {
       <button
         type="submit"
         disabled={pending}
-        className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-emerald-700 disabled:opacity-50"
+        className="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-medium text-white transition hover:bg-emerald-800 disabled:opacity-50"
       >
-        {pending ? "Recording…" : "Record decision"}
+        {pending ? "Recording…" : "Save decision note"}
       </button>
       {state.error ? (
         <p className="text-sm text-red-600" role="alert">

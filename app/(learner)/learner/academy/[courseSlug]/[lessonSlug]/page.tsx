@@ -1,12 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { cache } from "react";
 import { notFound } from "next/navigation";
 import { requireRole } from "@/lib/auth/session";
 import { academyRepository } from "@/lib/db";
-import {
-  getSampleLesson,
-  type ContentBlock,
-} from "@/lib/data/curriculum";
+import { readContentBlocks, type ContentBlock } from "@/lib/services/academy-content";
 import { lessonNavigation } from "@/lib/services/academy-rules";
 import { LessonCompleteButton } from "./lesson-complete-button";
 
@@ -14,11 +12,15 @@ interface PageProps {
   params: Promise<{ courseSlug: string; lessonSlug: string }>;
 }
 
+const getLesson = cache((courseSlug: string, lessonSlug: string) =>
+  academyRepository.getLesson(courseSlug, lessonSlug)
+);
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { courseSlug, lessonSlug } = await params;
-  const found = getSampleLesson(courseSlug, lessonSlug);
+  const found = await getLesson(courseSlug, lessonSlug);
   if (!found) return { title: "Lesson not found" };
-  return { title: found.lesson.title, description: "Academy lesson" };
+  return { title: found.title, description: "Academy lesson" };
 }
 
 function renderBlock(block: ContentBlock, index: number) {
@@ -38,9 +40,7 @@ function renderBlock(block: ContentBlock, index: number) {
     case "list":
       return (
         <div key={index} className="mt-4">
-          {block.title ? (
-            <p className="font-medium text-neutral-800">{block.title}</p>
-          ) : null}
+          {block.title ? <p className="font-medium text-neutral-800">{block.title}</p> : null}
           <ul className="mt-2 list-disc space-y-1 pl-5 text-neutral-700">
             {block.items.map((item, i) => (
               <li key={i}>{item}</li>
@@ -63,15 +63,13 @@ function renderBlock(block: ContentBlock, index: number) {
 
 export default async function AcademyLessonPage({ params }: PageProps) {
   const { courseSlug, lessonSlug } = await params;
-  const found = getSampleLesson(courseSlug, lessonSlug);
-  if (!found) notFound();
-  const { course, lesson } = found;
-
   const user = await requireRole("LEARNER");
-  const isComplete = await academyRepository.isLessonComplete(
-    user.id,
-    `${course.slug}/${lesson.slug}`
-  );
+  const found = await getLesson(courseSlug, lessonSlug);
+  if (!found) notFound();
+  const { course } = found;
+  const lesson = found;
+  const contentBlocks = readContentBlocks(lesson.contentBlocks);
+  const isComplete = await academyRepository.isLessonComplete(user.id, lesson.id);
 
   const currentIndex = course.lessons.findIndex((l) => l.slug === lesson.slug);
   const nav = lessonNavigation(course.lessons.length, currentIndex);
@@ -92,11 +90,17 @@ export default async function AcademyLessonPage({ params }: PageProps) {
           Lesson {lesson.order} of {course.lessons.length}
         </p>
         <h1 className="mt-1 text-3xl font-bold text-neutral-900">{lesson.title}</h1>
-        <p className="mt-1 text-sm text-neutral-500">~{lesson.estimatedMinutes} min</p>
+        {lesson.estimatedMinutes !== null ? (
+          <p className="mt-1 text-sm text-neutral-500">~{lesson.estimatedMinutes} min</p>
+        ) : null}
       </header>
 
       <article className="text-base leading-relaxed">
-        {lesson.contentBlocks.map(renderBlock)}
+        {contentBlocks ? (
+          contentBlocks.map(renderBlock)
+        ) : (
+          <p className="whitespace-pre-wrap text-neutral-700">{lesson.content}</p>
+        )}
       </article>
 
       <LessonCompleteButton

@@ -79,7 +79,8 @@ export function shouldNotifyForUpdate(
 export function buildUpdateNotification(
   strategyName: string,
   update: Pick<StrategyUpdate, "title" | "description">,
-  kind: NotificationType = FOLLOW_UPDATE_KIND
+  kind: NotificationType = FOLLOW_UPDATE_KIND,
+  recordKind: "UPDATE" | "DECISION" = "UPDATE"
 ): { kind: NotificationType; title: string; message: string } {
   if (!isNonEmpty(strategyName)) {
     throw new ValidationError("Strategy name is required", { strategy: "required" });
@@ -89,7 +90,10 @@ export function buildUpdateNotification(
       update: "notMeaningful",
     });
   }
-  const title = `${strategyName} published an update`;
+  const title =
+    recordKind === "DECISION"
+      ? `${strategyName} published a decision`
+      : `${strategyName} published an update`;
   const message = update.title;
   return { kind, title, message };
 }

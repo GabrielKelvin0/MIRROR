@@ -57,6 +57,7 @@ export interface AllocationInput {
 export interface NormalizedAllocation {
   strategyId: string;
   allocationPercentage: number;
+  reasoning?: string | null;
 }
 
 export interface DecisionInput {
@@ -95,7 +96,7 @@ export function validatePortfolioInput(input: PortfolioInput): NormalizedPortfol
   const startingCapital = input.startingCapital;
   if (
     typeof startingCapital !== "number" ||
-    Number.isNaN(startingCapital) ||
+    !Number.isFinite(startingCapital) ||
     startingCapital <= 0
   ) {
     throw new ValidationError("Starting capital must be a positive number", {
@@ -113,6 +114,11 @@ export function validatePortfolioInput(input: PortfolioInput): NormalizedPortfol
 export function validateDecision(input: DecisionInput): NormalizedDecision {
   if (!isNonEmpty(input.summary)) {
     throw new ValidationError("Decision summary is required", { summary: "required" });
+  }
+  if (input.summary!.trim().length > 500 || (input.description?.trim().length ?? 0) > 5000) {
+    throw new ValidationError(
+      "Keep the decision summary within 500 characters and notes within 5000"
+    );
   }
   return { summary: input.summary!.trim(), description: text(input.description) };
 }
@@ -152,17 +158,26 @@ export function validatePosition(input: PaperPositionInput): NormalizedPosition 
 export function validateAllocationInput(input: {
   strategyId?: string | undefined;
   allocationPercentage?: number;
+  reasoning?: string | null | undefined;
 }): NormalizedAllocation {
   if (!isNonEmpty(input.strategyId)) {
     throw new ValidationError("Strategy is required", { strategyId: "required" });
   }
   const pct = input.allocationPercentage;
-  if (typeof pct !== "number" || Number.isNaN(pct) || pct < 0 || pct > 100) {
+  if (typeof pct !== "number" || !Number.isFinite(pct) || pct < 0 || pct > 100) {
     throw new ValidationError("Allocation must be between 0 and 100", {
       allocationPercentage: "range",
     });
   }
-  return { strategyId: input.strategyId!.trim(), allocationPercentage: pct };
+  const reasoning = text(input.reasoning);
+  if ((reasoning?.length ?? 0) > 5000) {
+    throw new ValidationError("Keep the explanation within 5000 characters");
+  }
+  return {
+    strategyId: input.strategyId!.trim(),
+    allocationPercentage: pct,
+    ...(reasoning ? { reasoning } : {}),
+  };
 }
 
 /* ------------------------------------------------------------------ */
@@ -258,7 +273,7 @@ export function assertAllocationTotal(
   for (const allocation of allocations) {
     if (
       typeof allocation.allocationPercentage !== "number" ||
-      Number.isNaN(allocation.allocationPercentage) ||
+      !Number.isFinite(allocation.allocationPercentage) ||
       allocation.allocationPercentage < 0 ||
       allocation.allocationPercentage > 100
     ) {
@@ -268,7 +283,7 @@ export function assertAllocationTotal(
     }
   }
   const total = allocations.reduce((sum, a) => sum + a.allocationPercentage, 0);
-  const nextTotal = existingWeight - replacingWeight + total;
+  const nextTotal = Math.round((existingWeight - replacingWeight + total) * 1e10) / 1e10;
   if (nextTotal > 100) {
     throw new ValidationError(`Allocations total ${nextTotal}% — they cannot exceed 100%`, {
       allocation: "total",

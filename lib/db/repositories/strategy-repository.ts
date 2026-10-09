@@ -11,17 +11,26 @@
  */
 
 import "server-only";
-import { prisma } from "@/lib/db";
+import { prisma } from "@/lib/db/client";
+import {
+  lockMembership,
+  lockStrategy,
+  moderationTransactionOptions,
+} from "@/lib/db/moderation-locks";
 import type { StrategyStatus, Strategy, StrategyUpdate } from "@prisma/client";
-import { ForbiddenError, NotFoundError } from "@/lib/errors";
+import { BusinessRuleError, ForbiddenError, NotFoundError, ValidationError } from "@/lib/errors";
 import {
   validateStrategy,
   validateAllocation,
   validateStrategyUpdate,
+  validateStructuredDecision,
+  validateResultingAllocationTotal,
   assertTransition,
+  isPublishable,
   type StrategyInput,
   type AllocationInput,
   type StrategyUpdateInput,
+  type StructuredDecisionInput,
 } from "@/lib/services/strategy-rules";
 
 type OwnedStrategy = Strategy;
@@ -97,7 +106,10 @@ export class StrategyRepository {
       where: { id },
       include: {
         allocations: true,
-        updates: { orderBy: { effectiveDate: "desc" } },
+        updates: {
+          orderBy: { effectiveDate: "desc" },
+          include: { allocationDeltas: { orderBy: { createdAt: "asc" } } },
+        },
       },
     });
     if (!strategy) {
@@ -133,15 +145,28 @@ export class StrategyRepository {
 
   /** Transition a strategy's status (ownership + transition-checked). */
   async setStatus(id: string, creatorId: string, to: StrategyStatus) {
-    const strategy = await ownedStrategy(id, creatorId);
-    assertTransition(strategy.status as StrategyStatus, to);
-    return prisma.strategy.update({
-      where: { id },
-      data: {
-        status: to,
-        publishedAt: to === "PUBLISHED" ? new Date() : strategy.publishedAt,
-      },
-    });
+    return prisma.$transaction(async (tx) => {
+      await lockMembership(tx);
+      const creator = await tx.user.findUnique({
+        where: { id: creatorId },
+        select: { role: true },
+      });
+      if (creator?.role !== "CREATOR") throw new ForbiddenError("Creator access is required");
+      await lockStrategy(tx, id);
+      const strategy = await tx.strategy.findFirst({ where: { id, creatorId } });
+      if (!strategy) throw new ForbiddenError("You do not own this strategy");
+      assertTransition(strategy.status, to);
+      if (
+        to === "PUBLISHED" &&
+        !isPublishable({ name: strategy.name, riskProfile: strategy.riskProfile ?? "" })
+      ) {
+        throw new BusinessRuleError("A name and valid risk profile are required before publishing");
+      }
+      return tx.strategy.update({
+        where: { id },
+        data: { status: to, publishedAt: to === "PUBLISHED" ? new Date() : strategy.publishedAt },
+      });
+    }, moderationTransactionOptions);
   }
 
   /** Allocations for one of the caller's strategies (ownership-checked). */
@@ -220,6 +245,7 @@ export class StrategyRepository {
     return prisma.strategyUpdate.findMany({
       where: { strategyId: strategy.id },
       orderBy: { effectiveDate: "desc" },
+      include: { allocationDeltas: { orderBy: { createdAt: "asc" } } },
     });
   }
 
@@ -239,8 +265,131 @@ export class StrategyRepository {
         changesSummary: data.changesSummary,
         reasoning: data.reasoning,
         riskAssessment: data.riskAssessment,
+        evidence: null,
+        assumptionChanges: null,
+        kind: "UPDATE",
         effectiveDate: data.effectiveDate as Date,
       },
+    });
+  }
+
+  /**
+   * Publish a first-class structured decision for an owned PUBLISHED strategy.
+   *
+   * Any allocation changes are derived from authoritative database state and
+   * applied in the same transaction as the decision and immutable delta
+   * snapshots. A validation or persistence failure rolls the whole operation
+   * back.
+   */
+  async addStructuredDecision(
+    strategyId: string,
+    creatorId: string,
+    input: StructuredDecisionInput
+  ) {
+    const data = validateStructuredDecision(input);
+
+    return prisma.$transaction(async (tx) => {
+      const strategy = await tx.strategy.findUnique({
+        where: { id: strategyId },
+        select: { id: true, creatorId: true, status: true },
+      });
+
+      if (!strategy) {
+        throw new NotFoundError("Strategy not found");
+      }
+      if (strategy.creatorId !== creatorId) {
+        throw new ForbiddenError("You do not own this strategy");
+      }
+      if (strategy.status !== "PUBLISHED") {
+        throw new BusinessRuleError(
+          "Structured decisions can only be published for PUBLISHED strategies"
+        );
+      }
+
+      const allocations = await tx.strategyAllocation.findMany({
+        where: { strategyId },
+        orderBy: { createdAt: "asc" },
+      });
+      const allocationById = new Map(
+        allocations.map((allocation) => [allocation.id, allocation] as const)
+      );
+
+      const deltaPlans = data.allocationChanges.map((change) => {
+        const allocation = allocationById.get(change.allocationId);
+        if (!allocation) {
+          throw new NotFoundError("Allocation not found");
+        }
+
+        const beforePercentage = allocation.targetWeight;
+        const afterPercentage = change.afterPercentage;
+
+        if (afterPercentage !== null && beforePercentage === afterPercentage) {
+          throw new ValidationError("Allocation before and after values cannot be identical", {
+            afterPercentage: "no-change",
+          });
+        }
+
+        return {
+          allocationId: allocation.id,
+          assetClass: allocation.assetClass,
+          beforePercentage,
+          afterPercentage,
+        };
+      });
+
+      const planByAllocation = new Map<string, number | null>(
+        deltaPlans.map((plan) => [plan.allocationId, plan.afterPercentage] as const)
+      );
+      const resultingWeights = allocations.flatMap((allocation) => {
+        if (!planByAllocation.has(allocation.id)) {
+          return [allocation.targetWeight];
+        }
+        const after = planByAllocation.get(allocation.id);
+        return after === null || after === undefined ? [] : [after];
+      });
+      validateResultingAllocationTotal(resultingWeights);
+
+      const update = await tx.strategyUpdate.create({
+        data: {
+          strategyId,
+          kind: "DECISION",
+          title: data.title,
+          description: data.description,
+          changesSummary: data.changesSummary,
+          reasoning: data.reasoning,
+          riskAssessment: data.riskAssessment,
+          evidence: data.evidence,
+          assumptionChanges: data.assumptionChanges,
+          effectiveDate: data.effectiveDate,
+        },
+      });
+
+      for (const plan of deltaPlans) {
+        if (plan.afterPercentage === null) {
+          await tx.strategyAllocation.delete({ where: { id: plan.allocationId } });
+        } else {
+          await tx.strategyAllocation.update({
+            where: { id: plan.allocationId },
+            data: { targetWeight: plan.afterPercentage },
+          });
+        }
+      }
+
+      if (deltaPlans.length > 0) {
+        await tx.strategyUpdateAllocationDelta.createMany({
+          data: deltaPlans.map((plan) => ({
+            strategyUpdateId: update.id,
+            assetClass: plan.assetClass,
+            beforePercentage: plan.beforePercentage,
+            afterPercentage: plan.afterPercentage,
+          })),
+        });
+      }
+
+      return tx.strategyUpdate.findUniqueOrThrow({
+        where: { id: update.id },
+        include: { allocationDeltas: { orderBy: { createdAt: "asc" } } },
+      });
     });
   }
 
@@ -271,7 +420,8 @@ export class StrategyRepository {
         updates: {
           where: { effectiveDate: { lte: new Date() } },
           orderBy: { effectiveDate: "desc" },
-          take: 5,
+          take: 10,
+          include: { allocationDeltas: { orderBy: { createdAt: "asc" } } },
         },
       },
     });

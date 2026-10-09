@@ -105,14 +105,29 @@ export default async function EditStrategyPage({ params }: Props) {
       <section className="mt-6 rounded-xl border border-neutral-200 bg-white p-6">
         <UpdateManager
           strategyId={id}
+          strategyStatus={strategy.status}
+          allocations={allocations.map((a) => ({
+            id: a.id,
+            assetClass: a.assetClass,
+            targetWeight: a.targetWeight,
+          }))}
           updates={updates.map((u) => ({
             id: u.id,
+            kind: u.kind,
             title: u.title,
             description: u.description,
             changesSummary: u.changesSummary,
             reasoning: u.reasoning,
             riskAssessment: u.riskAssessment,
+            evidence: u.evidence,
+            assumptionChanges: u.assumptionChanges,
             effectiveDate: u.effectiveDate.toISOString(),
+            allocationDeltas: u.allocationDeltas.map((delta) => ({
+              id: delta.id,
+              assetClass: delta.assetClass,
+              beforePercentage: delta.beforePercentage,
+              afterPercentage: delta.afterPercentage,
+            })),
           }))}
         />
       </section>

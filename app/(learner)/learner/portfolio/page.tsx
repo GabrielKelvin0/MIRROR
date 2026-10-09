@@ -81,7 +81,9 @@ export default async function PortfolioListPage() {
                       <div>
                         <dt className="text-neutral-500">Current (hyp.)</dt>
                         <dd className="font-medium text-neutral-900">
-                          {currency.format(portfolio.currentValue)}
+                          {portfolio.simulatedValue === null
+                            ? "Unavailable"
+                            : currency.format(portfolio.simulatedValue)}
                         </dd>
                       </div>
                       <div>

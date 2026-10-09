@@ -1,62 +1,112 @@
-/**
- * MIRROR — Paper portfolio repository (server-only).
- *
- * Owns persistence for PaperPortfolio, PaperPortfolioStrategy, and
- * PortfolioEvent. Portfolios are scoped to the authenticated user and every
- * operation verifies ownership at the data boundary before reading or mutating
- * (preventing IDOR).
- *
- * All performance figures are deterministic and illustrative: the "current
- * value" is the simulated starting capital scaled by a frozen, clearly-labelled
- * model return. Nothing here is real-market data or an execution.
- */
-
+/** Ownership-scoped paper portfolios. All figures are educational simulations. */
 import "server-only";
-import { prisma } from "@/lib/db";
-import type { PaperPortfolio, Prisma, Strategy } from "@prisma/client";
-import { ForbiddenError, NotFoundError } from "@/lib/errors";
+import { prisma } from "@/lib/db/client";
+import { Prisma, type PaperPortfolio } from "@prisma/client";
+import { BusinessRuleError, NotFoundError } from "@/lib/errors";
 import {
   assertAllocationTotal,
   blendedAnnualReturn,
   portfolioReturn,
   SAMPLE_BENCHMARK,
+  validateAllocationInput,
+  validateDecision,
   type NormalizedPortfolio,
   type NormalizedDecision,
   type NormalizedAllocation,
 } from "@/lib/services/portfolio-rules";
+import {
+  allocationTotal,
+  planRebalance,
+  recordedHoldingsValue,
+  validateAllocationReason,
+  validateRebalanceInput,
+  type NormalizedRebalance,
+} from "@/lib/services/portfolio-maturity";
 
-/** Map a strategy's risk to an illustrative deterministic return bucket. */
-function bucketForRisk(risk: Strategy["riskProfile"] | null): string {
+const strategyInclude = {
+  strategy: { select: { id: true, name: true, riskProfile: true, status: true } },
+} as const;
+
+const mutableInclude = {
+  strategies: { include: strategyInclude, orderBy: [{ createdAt: "asc" }, { id: "asc" }] },
+  positions: true,
+} as const satisfies Prisma.PaperPortfolioInclude;
+const transactionOptions = {
+  isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted,
+  timeout: 10000,
+} as const;
+type MutablePortfolio = Prisma.PaperPortfolioGetPayload<{ include: typeof mutableInclude }>;
+type SimulatedPortfolio = Pick<PaperPortfolio, "cashBalance" | "startingCapital"> & {
+  strategies: Array<{ allocationPercentage: number; strategy: { riskProfile: string | null } }>;
+  positions: Array<{ quantity: number; entryPrice: number; currentPrice: number | null }>;
+};
+
+const detailInclude = {
+  ...mutableInclude,
+  events: {
+    take: 100,
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    include: { allocationDeltas: { orderBy: { strategyName: "asc" } } },
+  },
+} as const satisfies Prisma.PaperPortfolioInclude;
+export type OwnedPortfolioDetail = Prisma.PaperPortfolioGetPayload<{
+  include: typeof detailInclude;
+}>;
+
+function bucketForRisk(risk: string | null): string {
   if (risk === "HIGH") return "Aggressive Bucket";
   if (risk === "MODERATE") return "Moderate Bucket";
   return "Conservative Bucket";
 }
 
-/** The shape returned by `getOwned`: a portfolio with strategies→strategy, positions, and events. */
-type OwnedPortfolioDetail = Prisma.PaperPortfolioGetPayload<{
-  include: {
-    strategies: { include: { strategy: true } };
-    positions: true;
-    events: { orderBy: { createdAt: "desc" } };
-  };
-}>;
+function illustrativeBlend(allocations: SimulatedPortfolio["strategies"]) {
+  return blendedAnnualReturn(allocations, (a) => bucketForRisk(a.strategy.riskProfile));
+}
 
-async function ownedPortfolio(id: string, userId: string) {
-  const portfolio = await prisma.paperPortfolio.findUnique({
-    where: { id },
-    include: { strategies: true, positions: true },
-  });
-  if (!portfolio) {
-    throw new NotFoundError("Portfolio not found");
+function simulatedValue(portfolio: SimulatedPortfolio) {
+  if (portfolio.positions.length > 0) {
+    return recordedHoldingsValue(portfolio.cashBalance, portfolio.positions);
   }
-  if (portfolio.userId !== userId) {
-    throw new ForbiddenError("You do not own this portfolio");
+  const capital = Math.min(portfolio.cashBalance, portfolio.startingCapital);
+  const value =
+    capital * (1 + illustrativeBlend(portfolio.strategies) / 100) +
+    (portfolio.startingCapital - capital);
+  return Number.isFinite(value) ? value : null;
+}
+
+/** Every allocation mutation locks the same owned parent before reading weights. */
+async function lockOwnedPortfolio(
+  tx: Prisma.TransactionClient,
+  id: string,
+  userId: string,
+  active = true
+) {
+  const rows = await tx.$queryRaw<Array<{ id: string }>>(Prisma.sql`
+    SELECT "id" FROM "PaperPortfolio"
+    WHERE "id" = ${id} AND "userId" = ${userId} FOR UPDATE
+  `);
+  if (rows.length === 0) throw new NotFoundError("Portfolio not found");
+  const portfolio = await tx.paperPortfolio.findFirst({
+    where: { id, userId },
+    include: mutableInclude,
+  });
+  if (!portfolio) throw new NotFoundError("Portfolio not found");
+  if (active && portfolio.status !== "ACTIVE") {
+    throw new BusinessRuleError("Archived portfolios cannot be changed");
   }
   return portfolio;
 }
 
+async function recompute(tx: Prisma.TransactionClient, portfolio: MutablePortfolio) {
+  const currentValue = simulatedValue(portfolio);
+  // Unknown recorded prices must not silently become zero or overwrite the cache.
+  await tx.paperPortfolio.update({
+    where: { id: portfolio.id },
+    data: currentValue === null ? { updatedAt: new Date() } : { currentValue },
+  });
+}
+
 export class PortfolioRepository {
-  /** Create a new ACTIVE paper portfolio for the user with simulated capital. */
   async create(userId: string, data: NormalizedPortfolio): Promise<PaperPortfolio> {
     return prisma.paperPortfolio.create({
       data: {
@@ -71,199 +121,209 @@ export class PortfolioRepository {
     });
   }
 
-  /** List the user's portfolios (newest first). */
   async listForUser(userId: string) {
-    return prisma.paperPortfolio.findMany({
+    const portfolios = await prisma.paperPortfolio.findMany({
       where: { userId },
       orderBy: { updatedAt: "desc" },
-      include: { strategies: true },
-    });
-  }
-
-  /** Get one of the user's portfolios with allocations, positions, and events. */
-  async getOwned(id: string, userId: string): Promise<OwnedPortfolioDetail> {
-    const portfolio = await prisma.paperPortfolio.findUnique({
-      where: { id },
       include: {
-        strategies: { include: { strategy: true } },
-        positions: true,
-        events: { orderBy: { createdAt: "desc" } },
+        strategies: {
+          select: { allocationPercentage: true, strategy: { select: { riskProfile: true } } },
+        },
+        positions: { select: { quantity: true, entryPrice: true, currentPrice: true } },
       },
     });
-    if (!portfolio) {
-      throw new NotFoundError("Portfolio not found");
-    }
-    if (portfolio.userId !== userId) {
-      throw new ForbiddenError("You do not own this portfolio");
-    }
+    return portfolios.map((portfolio) => ({
+      ...portfolio,
+      simulatedValue: simulatedValue(portfolio),
+    }));
+  }
+
+  async getOwned(id: string, userId: string): Promise<OwnedPortfolioDetail> {
+    const portfolio = await prisma.paperPortfolio.findFirst({
+      where: { id, userId },
+      include: detailInclude,
+    });
+    if (!portfolio) throw new NotFoundError("Portfolio not found");
     return portfolio;
   }
 
-  /** Delete the user's portfolio (ownership-checked). */
   async delete(id: string, userId: string): Promise<void> {
-    await ownedPortfolio(id, userId);
-    await prisma.paperPortfolio.delete({ where: { id } });
+    await prisma.$transaction(async (tx) => {
+      await lockOwnedPortfolio(tx, id, userId, false);
+      await tx.paperPortfolio.delete({ where: { id } });
+    }, transactionOptions);
   }
 
-  /**
-   * Add (or update) a strategy allocation to a portfolio. Enforces the 100%
-   * total relative to the portfolio's current allocations (ownership-checked),
-   * and only allows published strategies. Records a STRATEGY_ADDED event.
-   */
+  /** Add/update, value, and immutable history commit or roll back together. */
   async addStrategyAllocation(id: string, userId: string, input: NormalizedAllocation) {
-    const portfolio = await ownedPortfolio(id, userId);
-    const currentTotal = portfolio.strategies.reduce(
-      (sum, s) => sum + (s.allocationPercentage ?? 0),
-      0
-    );
-    const existing = portfolio.strategies.find((s) => s.strategyId === input.strategyId);
-    const existingWeight = existing?.allocationPercentage ?? 0;
-    assertAllocationTotal(
-      [{ allocationPercentage: input.allocationPercentage }],
-      currentTotal,
-      existingWeight
-    );
-
-    const strategy = await prisma.strategy.findFirst({
-      where: { id: input.strategyId, status: "PUBLISHED" },
-    });
-    if (!strategy) {
-      throw new NotFoundError("Strategy not found");
-    }
-
-    if (existing) {
-      await prisma.paperPortfolioStrategy.update({
-        where: { id: existing.id },
-        data: { allocationPercentage: input.allocationPercentage },
+    const data = validateAllocationInput(input);
+    return prisma.$transaction(async (tx) => {
+      const portfolio = await lockOwnedPortfolio(tx, id, userId);
+      const before = allocationTotal(portfolio.strategies);
+      const existing = portfolio.strategies.find((s) => s.strategyId === data.strategyId);
+      assertAllocationTotal([data], before, existing?.allocationPercentage ?? 0);
+      const strategy = await tx.strategy.findFirst({
+        where: { id: data.strategyId, status: "PUBLISHED" },
+        select: { id: true, name: true, riskProfile: true, status: true },
       });
-    } else {
-      await prisma.paperPortfolioStrategy.create({
+      if (!strategy) throw new NotFoundError("Strategy not found");
+      if (existing?.allocationPercentage === data.allocationPercentage) return existing;
+      const reasoning = existing
+        ? validateAllocationReason(data.reasoning, true)
+        : (data.reasoning ?? null);
+      const link = existing
+        ? await tx.paperPortfolioStrategy.update({
+            where: { id: existing.id },
+            data: { allocationPercentage: data.allocationPercentage },
+          })
+        : await tx.paperPortfolioStrategy.create({
+            data: {
+              portfolioId: id,
+              strategyId: data.strategyId,
+              allocationPercentage: data.allocationPercentage,
+            },
+          });
+      const strategies = [
+        ...portfolio.strategies.filter((s) => s.strategyId !== data.strategyId),
+        { ...link, strategy },
+      ];
+      await tx.portfolioEvent.create({
         data: {
           portfolioId: id,
-          strategyId: input.strategyId,
-          allocationPercentage: input.allocationPercentage,
+          eventType: existing ? "REBALANCE" : "STRATEGY_ADDED",
+          description: `${existing ? "Updated" : "Added"} ${strategy.name} in the simulated allocation plan.`,
+          reasoning,
+          allocatedBefore: before,
+          allocatedAfter: allocationTotal(strategies),
+          allocationDeltas: {
+            create: [
+              {
+                strategyId: strategy.id,
+                strategyName: strategy.name,
+                beforePercentage: existing?.allocationPercentage ?? null,
+                afterPercentage: data.allocationPercentage,
+              },
+            ],
+          },
         },
       });
-      await prisma.portfolioEvent.create({
+      await recompute(tx, { ...portfolio, strategies });
+      return link;
+    }, transactionOptions);
+  }
+
+  async removeStrategyAllocation(
+    id: string,
+    userId: string,
+    strategyId: string,
+    reasoning?: string | null
+  ): Promise<void> {
+    const explanation = validateAllocationReason(reasoning);
+    await prisma.$transaction(async (tx) => {
+      const portfolio = await lockOwnedPortfolio(tx, id, userId);
+      const link = portfolio.strategies.find((s) => s.strategyId === strategyId);
+      if (!link) throw new NotFoundError("That strategy is not in this portfolio");
+      const strategies = portfolio.strategies.filter((s) => s.strategyId !== strategyId);
+      await tx.paperPortfolioStrategy.delete({ where: { id: link.id } });
+      await tx.portfolioEvent.create({
         data: {
           portfolioId: id,
-          eventType: "STRATEGY_ADDED",
-          description: `Added ${strategy.name} (${input.allocationPercentage}%) to the paper portfolio.`,
+          eventType: "STRATEGY_REMOVED",
+          description: `Removed ${link.strategy.name} from the simulated allocation plan.`,
+          reasoning: explanation,
+          allocatedBefore: allocationTotal(portfolio.strategies),
+          allocatedAfter: allocationTotal(strategies),
+          allocationDeltas: {
+            create: [
+              {
+                strategyId,
+                strategyName: link.strategy.name,
+                beforePercentage: link.allocationPercentage,
+                afterPercentage: null,
+              },
+            ],
+          },
         },
       });
-    }
-
-    await this.recompute(id);
-    return prisma.paperPortfolioStrategy.findFirstOrThrow({
-      where: { portfolioId: id, strategyId: input.strategyId },
-    });
+      await recompute(tx, { ...portfolio, strategies });
+    }, transactionOptions);
   }
 
-  /** Remove a strategy allocation (ownership-checked). Records STRATEGY_REMOVED. */
-  async removeStrategyAllocation(id: string, userId: string, strategyId: string): Promise<void> {
-    const portfolio = await ownedPortfolio(id, userId);
-    const link = portfolio.strategies.find((s) => s.strategyId === strategyId);
-    if (!link) {
-      throw new NotFoundError("That strategy is not in this portfolio");
-    }
-    const strategy = await prisma.strategy.findUnique({
-      where: { id: strategyId },
-      select: { name: true },
-    });
-    await prisma.paperPortfolioStrategy.delete({ where: { id: link.id } });
-    await prisma.portfolioEvent.create({
-      data: {
-        portfolioId: id,
-        eventType: "STRATEGY_REMOVED",
-        description: `Removed ${strategy?.name ?? "a strategy"} from the paper portfolio.`,
-      },
-    });
-    await this.recompute(id);
+  /** Rebalance existing targets only; paper positions and recorded cash are untouched. */
+  async rebalance(id: string, userId: string, input: NormalizedRebalance) {
+    const data = validateRebalanceInput(input);
+    return prisma.$transaction(async (tx) => {
+      const portfolio = await lockOwnedPortfolio(tx, id, userId);
+      const plan = planRebalance(
+        portfolio.strategies.map((s) => ({
+          strategyId: s.strategyId,
+          strategyName: s.strategy.name,
+          status: s.strategy.status,
+          allocationPercentage: s.allocationPercentage,
+        })),
+        data
+      );
+      for (const delta of plan.deltas) {
+        await tx.paperPortfolioStrategy.update({
+          where: { portfolioId_strategyId: { portfolioId: id, strategyId: delta.strategyId } },
+          data: { allocationPercentage: delta.afterPercentage! },
+        });
+      }
+      const event = await tx.portfolioEvent.create({
+        data: {
+          portfolioId: id,
+          eventType: "REBALANCE",
+          description: `Rebalanced ${plan.deltas.length} simulated strategy allocation${plan.deltas.length === 1 ? "" : "s"}.`,
+          reasoning: data.reasoning,
+          allocatedBefore: plan.allocatedBefore,
+          allocatedAfter: plan.allocatedAfter,
+          allocationDeltas: { create: plan.deltas },
+        },
+      });
+      const weights = new Map(data.changes.map((c) => [c.strategyId, c.allocationPercentage]));
+      await recompute(tx, {
+        ...portfolio,
+        strategies: portfolio.strategies.map((s) => ({
+          ...s,
+          allocationPercentage: weights.get(s.strategyId)!,
+        })),
+      });
+      return event;
+    }, transactionOptions);
   }
 
-  /**
-   * Record a manual portfolio decision as a portfolio event (ownership-checked).
-   * A summary is required; freeform decisions are stored as REBALANCE events
-   * carrying the decision text (see portfolio-rules for validation).
-   */
-  async recordDecision(id: string, userId: string, data: NormalizedDecision) {
-    await ownedPortfolio(id, userId);
-    return prisma.portfolioEvent.create({
-      data: {
-        portfolioId: id,
-        eventType: "REBALANCE",
-        description: `Manual decision: ${data.summary}${data.description ? ` — ${data.description}` : ""}`,
-      },
+  /** A note never changes allocations and is never presented as an executed rebalance. */
+  async recordDecision(id: string, userId: string, input: NormalizedDecision) {
+    const data = validateDecision({
+      summary: input.summary,
+      description: input.description ?? undefined,
     });
+    return prisma.$transaction(async (tx) => {
+      await lockOwnedPortfolio(tx, id, userId);
+      return tx.portfolioEvent.create({
+        data: {
+          portfolioId: id,
+          eventType: "REBALANCE",
+          description: `Manual decision: ${data.summary}${data.description ? ` — ${data.description}` : ""}`,
+        },
+      });
+    }, transactionOptions);
   }
 
-  /**
-   * Deterministically recompute the hypothetical current value and return
-   * summary from the strategy allocations. Never represents a real result.
-   */
-  async recompute(id: string): Promise<void> {
-    const portfolio = await prisma.paperPortfolio.findUnique({
-      where: { id },
-      include: {
-        strategies: { include: { strategy: true } },
-        positions: { select: { quantity: true, currentPrice: true } },
-      },
-    });
-    if (!portfolio) return;
-
-    const allocations = portfolio.strategies.map((s) => ({
-      allocationPercentage: s.allocationPercentage ?? 0,
-      risk: s.strategy.riskProfile,
-    }));
-    const invested = portfolio.positions.reduce(
-      (sum, p) => sum + p.quantity * (p.currentPrice ?? 0),
-      0
-    );
-    const cashBalance = portfolio.cashBalance;
-    const totalAllocated = allocations.reduce((sum, a) => sum + a.allocationPercentage, 0);
-
-    // Deterministic illustrative current value: allocated portion grows at the
-    // frozen model blended return; unallocated cash stays flat.
-    const blended =
-      totalAllocated > 0 ? blendedAnnualReturn(allocations, (a) => bucketForRisk(a.risk)) : 0;
-    const allocatedCapital = Math.min(cashBalance + invested, portfolio.startingCapital);
-    const illustrativeValue =
-      allocatedCapital * (totalAllocated > 0 ? 1 + blended / 100 : 1) +
-      (portfolio.startingCapital - allocatedCapital);
-
-    // If positions exist, prefer the cash + invested deterministic valuation.
-    const currentValue =
-      portfolio.positions.length > 0 ? cashBalance + invested : illustrativeValue;
-
-    await prisma.paperPortfolio.update({
-      where: { id },
-      data: { currentValue, cashBalance },
-    });
-  }
-
-  /**
-   * Deterministic performance summary presented to the learner (hypothetical).
-   *
-   * Accepts the already-loaded owned portfolio (from `getOwned`, which includes
-   * strategies + their strategy rows) so the detail page does not run the same
-   * heavy ownership query twice per render.
-   */
   async performanceSummary(portfolio: OwnedPortfolioDetail) {
-    const returnPct = portfolioReturn(portfolio.currentValue, portfolio.startingCapital);
-    const blended = blendedAnnualReturn(
-      portfolio.strategies.map((s) => ({
-        allocationPercentage: s.allocationPercentage ?? 0,
-        risk: s.strategy.riskProfile,
-      })),
-      (a) => bucketForRisk(a.risk)
-    );
+    const currentValue = simulatedValue(portfolio);
     return {
-      currentValue: portfolio.currentValue,
+      currentValue,
       startingCapital: portfolio.startingCapital,
-      returnPct,
-      blendedAnnualReturn: blended,
+      returnPct:
+        currentValue === null ? null : portfolioReturn(currentValue, portfolio.startingCapital),
+      blendedAnnualReturn: illustrativeBlend(portfolio.strategies),
       benchmark: SAMPLE_BENCHMARK,
       hypothetical: true,
+      basis:
+        portfolio.positions.length > 0
+          ? ("recorded-prices" as const)
+          : ("illustrative-model" as const),
     };
   }
 }

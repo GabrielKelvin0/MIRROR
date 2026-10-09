@@ -1,34 +1,34 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { cache } from "react";
 import { notFound } from "next/navigation";
 import { requireRole } from "@/lib/auth/session";
 import { academyRepository } from "@/lib/db";
-import { getCourseSample } from "@/lib/data/curriculum";
 import { courseProgress } from "@/lib/services/academy-rules";
 
 interface PageProps {
   params: Promise<{ courseSlug: string }>;
 }
 
+const getCourse = cache((slug: string) => academyRepository.getCourse(slug));
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { courseSlug } = await params;
-  const course = getCourseSample(courseSlug);
+  const course = await getCourse(courseSlug);
   if (!course) return { title: "Course not found" };
-  return { title: course.title, description: course.description };
+  return { title: course.title, description: course.description ?? undefined };
 }
 
 export default async function AcademyCoursePage({ params }: PageProps) {
   const { courseSlug } = await params;
-  const course = getCourseSample(courseSlug);
+  const user = await requireRole("LEARNER");
+  const course = await getCourse(courseSlug);
   if (!course) notFound();
 
-  const user = await requireRole("LEARNER");
   const completedKeys = new Set(await academyRepository.listCompletedLessonKeys(user.id));
-  const completedCount = course.lessons.filter((l) =>
-    completedKeys.has(`${course.slug}/${l.slug}`)
-  ).length;
-  const totalMinutes = course.lessons.reduce((sum, l) => sum + l.estimatedMinutes, 0);
-  const lessonKeys = course.lessons.map((l) => `${course.slug}/${l.slug}`);
+  const completedCount = course.lessons.filter((l) => completedKeys.has(l.id)).length;
+  const totalMinutes = course.lessons.reduce((sum, l) => sum + (l.estimatedMinutes ?? 0), 0);
+  const lessonKeys = course.lessons.map((l) => l.id);
   const progress = courseProgress([...completedKeys], lessonKeys);
 
   return (
@@ -67,7 +67,7 @@ export default async function AcademyCoursePage({ params }: PageProps) {
 
       <ol className="space-y-3">
         {course.lessons.map((lesson, index) => {
-          const done = completedKeys.has(`${course.slug}/${lesson.slug}`);
+          const done = completedKeys.has(lesson.id);
           return (
             <li key={lesson.slug}>
               <Link
@@ -83,7 +83,9 @@ export default async function AcademyCoursePage({ params }: PageProps) {
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="font-medium text-neutral-900">{lesson.title}</p>
-                  <p className="text-xs text-neutral-500">~{lesson.estimatedMinutes} min</p>
+                  {lesson.estimatedMinutes !== null ? (
+                    <p className="text-xs text-neutral-500">~{lesson.estimatedMinutes} min</p>
+                  ) : null}
                 </div>
               </Link>
             </li>

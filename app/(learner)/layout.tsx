@@ -21,8 +21,18 @@ export default async function LearnerLayout({ children }: { children: ReactNode 
         Skip to main content
       </a>
       <header className="border-b border-neutral-200 bg-white">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-          <span className="font-semibold text-neutral-900">MIRROR Learner</span>
+        <div className="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-4">
+            <span className="font-semibold text-neutral-900">MIRROR Learner</span>
+            <nav aria-label="Learner" className="flex gap-3 text-sm">
+              <a href="/learner/dashboard" className="py-2">
+                Dashboard
+              </a>
+              <a href="/learner/reports" className="py-2">
+                My reports
+              </a>
+            </nav>
+          </div>
           <SignOutButton>
             <button className="text-sm text-neutral-600 hover:text-neutral-900">Sign out</button>
           </SignOutButton>

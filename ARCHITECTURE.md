@@ -39,6 +39,7 @@ Learner (layout `app/(learner)/layout.tsx` requires LEARNER):
 - `/learner/portfolio`, `/learner/portfolio/[id]`
 - `/learner/academy`, `/learner/academy/[courseSlug]`, `/learner/academy/[courseSlug]/[lessonSlug]`
 - `/learner/subscription`
+- `/learner/reports` — reports owned by the current learner
 
 Creator (layout `app/(creator)/layout.tsx` requires CREATOR):
 
@@ -46,13 +47,18 @@ Creator (layout `app/(creator)/layout.tsx` requires CREATOR):
 - `/creator/dashboard/strategies/new`
 - `/creator/dashboard/strategies/[id]/edit`
 - `/creator/dashboard/strategies/[id]/preview`
+- `/creator/reports` — reports owned by the current creator
 
 Admin (layout `app/(admin)/layout.tsx` requires ADMIN):
 
 - `/admin/dashboard`, `/admin/users`, `/admin/creators`
-- `/admin/strategies`, `/admin/reports`
+- `/admin/strategies`, `/admin/reports`, `/admin/audit`
 
-Middleware protects `/learner/*`, `/creator/*`, `/admin/*` and matches these real
+Shared authenticated `/reports/new` accepts LEARNER/CREATOR submissions for a
+currently published database strategy or public creator. ADMIN is redirected to
+the moderation queue. Sample blueprints are not database report targets.
+
+Middleware protects `/learner/*`, `/creator/*`, `/admin/*`, `/reports/*` and matches these real
 URLs. `scripts/check-routes.mjs` (npm run check:routes) guards this structure in CI.
 
 ---
@@ -88,6 +94,7 @@ URLs. `scripts/check-routes.mjs` (npm run check:routes) guards this structure in
 - Phase 18: public discovery/detail of PUBLISHED creator-authored strategies — `/strategies` lists live strategies from creators (kept separate from labeled sample models), and `/strategies/[id]` renders the creator's DB-backed thesis, methodology/decision rules, risk and exit conditions, target allocation, update & decision history, creator profile, and any model performance context; learner following links into these public detail pages — DB-native public rendering is intentional: sample blueprint UI is unchanged, and mapping published strategies into it would require fabricating category/tagline/region metadata that is not stored in the database
 
 - Phase 19: public creator identity — `/creators` directory (CREATOR role + profile + at least one PUBLISHED strategy) and `/creators/[id]` DB-native profiles (identity, verification state, about/approach, joined context, PUBLISHED strategies). Unknown or non-creator identifiers 404; LEARNER/ADMIN are never listed; drafts are never exposed; no fabricated fields, fake follower numbers, or performance ranking; strategy details link to the creator's public profile
+- Phase 20: structured decision history — StrategyUpdate is the single chronological history model with UPDATE/DECISION discrimination. DECISION records add evidence and assumption-change context; immutable StrategyUpdateAllocationDelta rows snapshot allocation identity plus before/after percentages. Decision allocation changes are ownership/status checked and committed atomically with the decision so historical deltas cannot drift from the mutation that created them. Legacy UPDATE rows remain valid and are never backfilled with fabricated decision metadata.
 
 **Planned (future phases, not yet built):** pricing, go-to-market, academy
 overview, paper-portfolio demo.
@@ -144,7 +151,7 @@ application depends on the auth/session/roles boundary, not on Clerk directly.
 
 ### 3. Learner Application
 
-**Route:** `/learner` (protected, requires LEARNER or CREATOR role)
+**Route:** `/learner` (protected, requires LEARNER role)
 
 **Purpose:** Strategy discovery, learning, paper portfolio management
 
@@ -159,7 +166,7 @@ application depends on the auth/session/roles boundary, not on Clerk directly.
 - Notifications
 - Profile management
 
-**Authorization:** Must be authenticated with LEARNER or CREATOR role
+**Authorization:** Must be authenticated with LEARNER role
 
 **Database Access:** Read public strategies, create/manage own portfolios, read learning progress
 
@@ -220,10 +227,36 @@ strategy is verified server-side (never client-supplied identity)
 **Security:** Every admin action is auditable
 
 Implemented admin surfaces (all ADMIN-guarded server-side): `/admin/users` (role
-management), `/admin/creators`, `/admin/strategies` (status moderation), and
-`/admin/reports` (status resolution). `AuditLog` rows are written by admin and
-creator mutations; there is no dedicated audit-log UI yet. Platform
-configuration and Academy content management remain planned.
+management), `/admin/creators` (verification decisions), `/admin/strategies`
+(content status moderation), `/admin/reports` (case review and linked strategy
+actions), and `/admin/audit` (the latest 100 audit entries). Platform configuration
+and Academy content management remain planned.
+
+**Phase 23:** Privileged mutations recheck the actor's database ADMIN role inside
+the same Read Committed transaction as the write and audit. Transaction-level
+membership advisory locks order these checks against role changes; role changes
+take the exclusive lock and protect self-demotion/the final administrator. Row
+locks and submitted expected state reject stale reviews. Creator status changes
+use the same membership/strategy locking protocol, so an archived strategy cannot
+be republished from a stale creator form. Only ADMIN can restore an archived
+strategy to a private DRAFT; publication still requires its name and risk profile.
+
+Every review requires an explanation and commits its audit record atomically.
+Actual archiving/restoration records SUSPEND/RESTORE moderation actions; report
+case progress does not manufacture warnings or alter content. Verification
+records a manual administrative decision on an existing creator profile. It does
+not grant roles or constitute performance/licensing approval.
+
+The additive migration keeps `AuditLog.resourceId` and its existing Strategy FK.
+New nullable `targetId` captures polymorphic USER/REPORT/STRATEGY identity; known
+old strategy IDs are copied without changing original fields. New reports
+capture the public label in nullable `resourceName`; old reports keep NULL.
+Submission locks the reporter, rechecks their role and public target, rejects an
+active duplicate, and limits submissions to five per hour. Owner-scoped report
+reads expose original report text/status, never private administrative reasons or
+reporter emails. Bounded audit rendering displays only known review fields and
+labels old fabricated case-status moderation records as legacy history.
+See PHASE_23_VERIFICATION.md for staging evidence and deferred browser checks.
 
 ---
 
@@ -640,6 +673,33 @@ every read/mutation verifies ownership before touching data. Manual decisions
 are stored as `REBALANCE` portfolio events (the schema's closest existing
 event type) with the decision text in the description.
 
+**Phase 22: Paper portfolio maturity.** All allocation mutations use a short
+Read Committed Prisma transaction that locks the owned `PaperPortfolio` before
+reading its mix. Add/edit/remove/rebalance changes, nullable event totals and
+reasoning, immutable `PortfolioEventAllocationDelta` snapshots, and the simulated
+valuation write commit together. The snapshot stores strategy ID/name and
+before/after percentages without a Strategy FK, so later renaming or deletion
+cannot rewrite history. A composite event timeline index and unique
+event/strategy snapshot index support scoped reads; SQL checks reject invalid
+percentages and no-op snapshots. Existing event text/timestamps are preserved,
+with NULL metadata and no fabricated deltas.
+
+The rebalance form updates the complete existing target mix, requires an
+explanation, detects stale IDs/weights, and never creates or executes trades.
+Unpublished allocations may be reduced or removed but not increased. All action
+identities come from the LEARNER session; history queries include ownership in
+the database predicate. The latest 100 events are displayed, with older rows
+retained. Manual notes keep their historical REBALANCE enum compatibility and
+are presented as notes rather than allocation mutations.
+
+`lib/services/portfolio-maturity.ts` owns pure rebalance planning and recorded
+holding math. Strategy notional capital/reserve use simulated starting capital;
+recorded holdings are a separate view. Quantity × recorded price determines
+value, independently of stale cached fields. An unpriced holding makes the
+holding total and corresponding return unavailable. No live-price feed or new
+position-entry workflow is introduced. See PHASE_22_VERIFICATION.md for staging
+migration verification and deferred authenticated browser checks.
+
 **Phase 10:** Academy — implemented (DB-backed progress, like Phase 9; live Neon database with migrations applied
 and runtime data-layer paths verified via Prisma probes).
 Learners follow structured learning paths organized into three levels — Beginner
@@ -651,25 +711,31 @@ ordered lessons with typed content blocks; learners mark lessons complete and
 track per-course and per-level progress. All content is educational and clearly
 not personalized advice nor a guarantee of any outcome.
 
-The curriculum itself lives in `lib/data/curriculum.ts` as typed sample data
-(16 courses, ~48 lessons, content as a `ContentBlock` union rendered directly as
-React) shaped to mirror the Prisma `Course`/`Lesson` models so it can be swapped
-for DB records without a redesign. Pure, deterministic rules (progress math,
-completion-state resolution, input validation, lesson navigation) live in
-`lib/services/academy-rules.ts` (unit-tested in `academy-rules.test.ts`).
-Persistence with per-user scoping lives in `lib/db/repositories/
-academy-repository.ts`; server actions are in `app/(learner)/learner/academy/actions.ts`;
-learner UI is under `/learner/academy` (catalog, course detail with progress bar,
-lesson content with complete/incomplete toggle and prev/next navigation) plus a
-client `LessonCompleteButton`. Progress rows are scoped to the authenticated user.
+Phase 21 moves runtime curriculum reads to PostgreSQL `Course` and `Lesson` records.
+`lib/data/curriculum.ts` is the approved input for the versioned curriculum seed,
+not a runtime fallback. The initial database catalog has 16 courses and 48 lessons.
+The public `/academy` entry lists course metadata without reading learner progress;
+course and lesson content retain their existing `/learner/academy/...` URLs.
+Academy remains a free feature for every plan. Completion requires the exact
+LEARNER role and uses the authenticated local user ID, never a submitted identity.
 
-DESIGN NOTE — lesson identity: `Progress.lessonId` stores the curriculum's
-stable `"courseSlug/lessonSlug"` key and deliberately has no FK to `Lesson.id`
-while the curriculum is typed sample data. The FK was removed by migration
-20260902080805_remove_progress_lesson_fk (constraint-only, non-destructive);
-duplicate completion is prevented by `@@unique([userId, lessonId])`. When a
-later phase seeds real `Course`/`Lesson` rows, progress must be reconciled to
-real lesson ids and the FK restored.
+`Lesson.id` and `Progress.lessonId` both use the deterministic
+`courseSlug/lessonSlug` key. Course and lesson slugs are identity: future renames
+must reconcile lesson IDs and progress atomically rather than regenerate IDs.
+The migration reconciles legacy lesson IDs, preserves progress rows and timestamps,
+seeds missing lessons without overwriting existing content, then restores the
+Progress-to-Lesson FK with `ON DELETE RESTRICT` and `ON UPDATE CASCADE` plus a
+lessonId index. Unknown progress keys and identity or per-user progress collisions
+abort the entire migration; no history is deleted or merged silently.
+
+Lesson content uses nullable JSON `contentBlocks`, validated against the existing
+content-block union before React renders it. Existing text/Markdown content is
+preserved and displayed as escaped text when structured content is absent or invalid.
+There is no HTML injection, new Markdown dependency, or Academy authoring UI in this phase.
+Pure rules live in `lib/services/academy-{rules,content}.ts`; server-only persistence
+in `lib/db/repositories/academy-repository.ts`; authenticated completion actions
+in `app/(learner)/learner/academy/actions.ts`. Metadata/page queries use per-request
+React cache, and catalog/progress reads run concurrently after authentication.
 
 **Phase 11:** Performance & Risk — implemented (no DB dependency; runtime
 verifiable via typecheck/tests/lint in this container). Adds a deterministic

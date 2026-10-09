@@ -3,15 +3,20 @@
  *
  * This module contains ONLY pure functions: input validation and strategy
  * status/state logic. It has no database or I/O dependency, so it can be
- * unit-tested in isolation.
+ * unit-tested in isolation (see strategy-rules.test.ts).
+ *
+ * Server-side authorization and ownership are enforced in the repository and
+ * server actions, not here. These functions validate shape, not identity.
  */
 
 import type { StrategyStatus, StrategyUpdateKind } from "@prisma/client";
 import { ValidationError, BusinessRuleError } from "@/lib/errors";
 
+/** Risk profiles accepted on a Strategy record. */
 export const RISK_PROFILES = ["LOW", "MODERATE", "HIGH"] as const;
 export type RiskProfile = (typeof RISK_PROFILES)[number];
 
+/** Allowed status transitions (source -> target). */
 export const ALLOWED_TRANSITIONS: Record<StrategyStatus, StrategyStatus[]> = {
   DRAFT: ["PUBLISHED", "ARCHIVED"],
   PUBLISHED: ["ARCHIVED"],
@@ -32,35 +37,7 @@ export interface StrategyInput {
   invalidatingConditions?: string;
 }
 
-export interface AllocationInput {
-  assetClass?: string;
-  targetWeight?: number;
-  reasoning?: string;
-}
-
-export interface StrategyUpdateInput {
-  title?: string;
-  description?: string;
-  changesSummary?: string;
-  reasoning?: string;
-  riskAssessment?: string;
-  effectiveDate?: Date;
-  evidence?: string;
-  assumptionChanges?: string;
-  kind?: StrategyUpdateKind;
-}
-
-export interface AllocationDeltaInput {
-  assetClass?: string;
-  beforePercentage?: number | null;
-  afterPercentage?: number | null;
-}
-
-export interface StructuredDecisionInput extends StrategyUpdateInput {
-  kind?: "DECISION";
-  allocationChanges?: AllocationDeltaInput[];
-}
-
+/** Normalized (validated) strategy fields. Blank text is stored as null. */
 export interface NormalizedStrategyData {
   name: string;
   description: string | null;
@@ -75,6 +52,41 @@ export interface NormalizedStrategyData {
   invalidatingConditions: string | null;
 }
 
+export interface AllocationInput {
+  assetClass?: string;
+  targetWeight?: number;
+  reasoning?: string;
+}
+
+export interface StrategyUpdateInput {
+  title?: string | undefined;
+  description?: string | undefined;
+  changesSummary?: string | undefined;
+  reasoning?: string | undefined;
+  riskAssessment?: string | undefined;
+  evidence?: string | undefined;
+  assumptionChanges?: string | undefined;
+  effectiveDate?: Date | undefined;
+  kind?: StrategyUpdateKind | undefined;
+}
+
+export interface StructuredAllocationChangeInput {
+  allocationId?: string | undefined;
+  afterPercentage?: number | null | undefined;
+}
+
+export interface StructuredDecisionInput {
+  title?: string | undefined;
+  description?: string | undefined;
+  changesSummary?: string | undefined;
+  reasoning?: string | undefined;
+  riskAssessment?: string | undefined;
+  evidence?: string | undefined;
+  assumptionChanges?: string | undefined;
+  effectiveDate?: Date | undefined;
+  allocationChanges?: StructuredAllocationChangeInput[] | undefined;
+}
+
 export interface NormalizedStrategyUpdate {
   title: string;
   description: string;
@@ -87,6 +99,15 @@ export interface NormalizedStrategyUpdate {
   kind: StrategyUpdateKind;
 }
 
+export interface NormalizedStructuredDecision extends NormalizedStrategyUpdate {
+  kind: "DECISION";
+  allocationChanges: Array<{
+    allocationId: string;
+    afterPercentage: number | null;
+  }>;
+}
+
+/** Trim and normalize a single text input, or return null when blank. */
 function text(value: string | null | undefined): string | null {
   if (value == null) return null;
   const trimmed = value.trim();
@@ -101,14 +122,16 @@ function isRiskProfile(value: string | null | undefined): boolean {
   return value != null && (RISK_PROFILES as readonly string[]).includes(value.trim().toUpperCase());
 }
 
-function isFinitePercentage(value: number | null | undefined): value is number {
-  return value != null && Number.isFinite(value) && value >= 0 && value <= 100;
+function isFinitePercentage(value: number): boolean {
+  return Number.isFinite(value) && value >= 0 && value <= 100;
 }
 
+/** Is a strategy publishable? A name and a risk profile are required. */
 export function isPublishable(input: StrategyInput): boolean {
   return isNonEmpty(input.name) && isRiskProfile(input.riskProfile);
 }
 
+/** Validate and normalize a StrategyInput. Throws ValidationError on bad input. */
 export function validateStrategy(input: StrategyInput): NormalizedStrategyData {
   const name = text(input.name);
   if (!name) {
@@ -137,6 +160,7 @@ export function validateStrategy(input: StrategyInput): NormalizedStrategyData {
   };
 }
 
+/** Validate an allocation input. Weights must be 0–100 and total cannot exceed 100. */
 export function validateAllocation(
   input: AllocationInput,
   currentTotal: number,
@@ -148,7 +172,7 @@ export function validateAllocation(
   if (input.targetWeight == null) {
     throw new ValidationError("Target weight is required", { targetWeight: "required" });
   }
-  if (typeof input.targetWeight !== "number" || Number.isNaN(input.targetWeight)) {
+  if (typeof input.targetWeight !== "number" || !Number.isFinite(input.targetWeight)) {
     throw new ValidationError("Target weight must be a number", { targetWeight: "invalid" });
   }
   if (input.targetWeight < 0 || input.targetWeight > 100) {
@@ -164,6 +188,7 @@ export function validateAllocation(
   }
 }
 
+/** Validate a legacy/general strategy update. */
 export function validateStrategyUpdate(input: StrategyUpdateInput): NormalizedStrategyUpdate {
   if (!isNonEmpty(input.title)) {
     throw new ValidationError("Update title is required", { title: "required" });
@@ -188,11 +213,16 @@ export function validateStrategyUpdate(input: StrategyUpdateInput): NormalizedSt
   };
 }
 
+/**
+ * Validate a first-class MIRROR decision.
+ *
+ * Decision records require what/why/evidence/risk. The persisted description
+ * falls back to the creator-authored change summary so legacy consumers remain
+ * compatible without inventing additional content.
+ */
 export function validateStructuredDecision(
   input: StructuredDecisionInput
-): NormalizedStrategyUpdate & { allocationChanges: AllocationDeltaInput[] } {
-  const base = validateStrategyUpdate(input);
-
+): NormalizedStructuredDecision {
   if (!isNonEmpty(input.changesSummary)) {
     throw new ValidationError("What changed is required for a structured decision", {
       changesSummary: "required",
@@ -209,48 +239,52 @@ export function validateStructuredDecision(
     });
   }
   if (!isNonEmpty(input.riskAssessment)) {
-    throw new ValidationError("Risk assessment is required for a structured decision", {
+    throw new ValidationError("Risk implications are required for a structured decision", {
       riskAssessment: "required",
     });
   }
-  if (input.kind && input.kind !== "DECISION") {
-    throw new ValidationError("Decision kind must be DECISION", { kind: "invalid" });
-  }
 
-  const allocationChanges = input.allocationChanges ?? [];
+  const base = validateStrategyUpdate({
+    title: input.title,
+    description: input.description ?? input.changesSummary,
+    changesSummary: input.changesSummary,
+    reasoning: input.reasoning,
+    riskAssessment: input.riskAssessment,
+    evidence: input.evidence,
+    assumptionChanges: input.assumptionChanges,
+    effectiveDate: input.effectiveDate,
+    kind: "DECISION",
+  });
+
   const seen = new Set<string>();
-  for (const change of allocationChanges) {
-    if (!isNonEmpty(change.assetClass)) {
-      throw new ValidationError("Allocation asset class is required", { assetClass: "required" });
+  const allocationChanges = (input.allocationChanges ?? []).map((change) => {
+    const allocationId = text(change.allocationId);
+    if (!allocationId) {
+      throw new ValidationError("Allocation is required", { allocationId: "required" });
     }
-    const normalizedAsset = change.assetClass!.trim();
-    if (seen.has(normalizedAsset)) {
-      throw new ValidationError(`Duplicate allocation change for ${normalizedAsset}`, {
-        assetClass: "duplicate",
+    if (seen.has(allocationId)) {
+      throw new ValidationError("Each allocation can only be changed once per decision", {
+        allocationId: "duplicate",
       });
     }
-    seen.add(normalizedAsset);
+    seen.add(allocationId);
 
-    if (!isFinitePercentage(change.afterPercentage)) {
-      throw new ValidationError("Allocation after-value must be between 0 and 100", {
-        targetWeight: "invalid",
+    if (change.afterPercentage === undefined) {
+      throw new ValidationError("New allocation percentage is required", {
+        afterPercentage: "required",
       });
     }
-    if (change.beforePercentage != null && !isFinitePercentage(change.beforePercentage)) {
-      throw new ValidationError("Allocation before-value must be between 0 and 100", {
-        targetWeight: "invalid",
+    if (change.afterPercentage !== null && !isFinitePercentage(change.afterPercentage)) {
+      throw new ValidationError("Allocation percentage must be between 0 and 100", {
+        afterPercentage: "invalid",
       });
     }
-    if (
-      change.beforePercentage != null &&
-      change.afterPercentage != null &&
-      change.beforePercentage === change.afterPercentage
-    ) {
-      throw new ValidationError("Allocation before and after values cannot be identical", {
-        targetWeight: "no-change",
-      });
-    }
-  }
+
+    return {
+      allocationId,
+      afterPercentage: change.afterPercentage,
+    };
+  });
 
   return {
     ...base,
@@ -259,6 +293,23 @@ export function validateStructuredDecision(
   };
 }
 
+/** Validate the complete post-decision allocation state using MIRROR's existing <=100 rule. */
+export function validateResultingAllocationTotal(weights: number[]): void {
+  if (weights.some((weight) => !isFinitePercentage(weight))) {
+    throw new ValidationError("Every allocation percentage must be between 0 and 100", {
+      allocation: "invalid",
+    });
+  }
+
+  const total = weights.reduce((sum, weight) => sum + weight, 0);
+  if (total > 100) {
+    throw new ValidationError(`Allocations total ${total}% — they cannot exceed 100%`, {
+      allocation: "total",
+    });
+  }
+}
+
+/** Throw BusinessRuleError if `from -> to` is not an allowed transition. */
 export function assertTransition(from: StrategyStatus, to: StrategyStatus): void {
   const allowed = ALLOWED_TRANSITIONS[from] ?? [];
   if (!allowed.includes(to)) {

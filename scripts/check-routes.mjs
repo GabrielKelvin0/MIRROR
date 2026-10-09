@@ -29,6 +29,7 @@ const ROLE_PREFIXES = {
 const EXPECTED_ROUTES = [
   "/",
   "/about",
+  "/academy",
   "/how-it-works",
   "/strategies",
   "/strategies/[slug]",

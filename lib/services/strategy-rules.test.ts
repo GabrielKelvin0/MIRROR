@@ -3,6 +3,8 @@ import {
   validateStrategy,
   validateAllocation,
   validateStrategyUpdate,
+  validateStructuredDecision,
+  validateResultingAllocationTotal,
   assertTransition,
   isPublishable,
   RISK_PROFILES,
@@ -178,5 +180,99 @@ describe("validateStrategyUpdate whitespace", () => {
     expect(() =>
       validateStrategyUpdate({ title: "   ", description: "d", effectiveDate: new Date() })
     ).toThrow(ValidationError);
+  });
+});
+
+
+describe("validateStructuredDecision", () => {
+  const validDecision = () => ({
+    title: "Reduce concentration",
+    changesSummary: "Reduced technology exposure from 25% to 15%",
+    reasoning: "Valuation expanded beyond the strategy threshold",
+    evidence: "Earnings growth slowed while valuation multiples increased",
+    riskAssessment: "Concentration risk falls while upside exposure is reduced",
+    effectiveDate: new Date("2026-10-07T00:00:00Z"),
+  });
+
+  it("accepts a structured decision and derives a legacy-compatible description", () => {
+    const out = validateStructuredDecision(validDecision());
+    expect(out.kind).toBe("DECISION");
+    expect(out.description).toBe(validDecision().changesSummary);
+    expect(out.evidence).toContain("Earnings growth");
+    expect(out.assumptionChanges).toBeNull();
+  });
+
+  it("requires what changed, why, evidence, and risk implications", () => {
+    expect(() => validateStructuredDecision({ ...validDecision(), changesSummary: " " })).toThrow(
+      ValidationError
+    );
+    expect(() => validateStructuredDecision({ ...validDecision(), reasoning: " " })).toThrow(
+      ValidationError
+    );
+    expect(() => validateStructuredDecision({ ...validDecision(), evidence: " " })).toThrow(
+      ValidationError
+    );
+    expect(() => validateStructuredDecision({ ...validDecision(), riskAssessment: " " })).toThrow(
+      ValidationError
+    );
+  });
+
+  it("accepts optional assumption changes", () => {
+    const out = validateStructuredDecision({
+      ...validDecision(),
+      assumptionChanges: "Long-term thesis unchanged; near-term valuation assumption weakened",
+    });
+    expect(out.assumptionChanges).toContain("Long-term thesis unchanged");
+  });
+
+  it("validates allocation changes without trusting a client before-value", () => {
+    const out = validateStructuredDecision({
+      ...validDecision(),
+      allocationChanges: [{ allocationId: "alloc-1", afterPercentage: 15 }],
+    });
+    expect(out.allocationChanges).toEqual([
+      { allocationId: "alloc-1", afterPercentage: 15 },
+    ]);
+  });
+
+  it("supports explicit removal and rejects invalid or duplicate allocation changes", () => {
+    expect(
+      validateStructuredDecision({
+        ...validDecision(),
+        allocationChanges: [{ allocationId: "alloc-1", afterPercentage: null }],
+      }).allocationChanges[0]
+    ).toEqual({ allocationId: "alloc-1", afterPercentage: null });
+
+    expect(() =>
+      validateStructuredDecision({
+        ...validDecision(),
+        allocationChanges: [{ allocationId: "alloc-1", afterPercentage: 101 }],
+      })
+    ).toThrow(ValidationError);
+
+    expect(() =>
+      validateStructuredDecision({
+        ...validDecision(),
+        allocationChanges: [
+          { allocationId: "alloc-1", afterPercentage: 10 },
+          { allocationId: "alloc-1", afterPercentage: 20 },
+        ],
+      })
+    ).toThrow(ValidationError);
+  });
+});
+
+describe("validateResultingAllocationTotal", () => {
+  it("accepts totals up to 100%", () => {
+    expect(() => validateResultingAllocationTotal([60, 40])).not.toThrow();
+    expect(() => validateResultingAllocationTotal([40, 20])).not.toThrow();
+  });
+
+  it("rejects totals above 100% and invalid percentages", () => {
+    expect(() => validateResultingAllocationTotal([60, 41])).toThrow(ValidationError);
+    expect(() => validateResultingAllocationTotal([50, Number.POSITIVE_INFINITY])).toThrow(
+      ValidationError
+    );
+    expect(() => validateResultingAllocationTotal([-1, 50])).toThrow(ValidationError);
   });
 });

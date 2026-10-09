@@ -5,6 +5,7 @@ import { publicCreatorRepository } from "@/lib/db";
 import { PublishedStrategyCard } from "@/components/marketing/PublishedStrategyCard";
 import { creatorDisplayName, formatDisplayDate } from "@/lib/services/strategy-presentation";
 import { verificationStateLabel, VERIFICATION_CONTEXT } from "@/lib/services/creator-public-rules";
+import { reportHref } from "@/lib/services/moderation-rules";
 
 export const dynamic = "force-dynamic";
 
@@ -70,6 +71,12 @@ export default async function PublicCreatorProfilePage({ params }: Props) {
         </div>
 
         <h1 className="mt-4 text-3xl font-semibold text-neutral-900 sm:text-4xl">{name}</h1>
+        <Link
+          href={reportHref("USER", creator.id)}
+          className="mt-4 inline-block rounded-lg border border-neutral-300 px-4 py-3 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
+        >
+          Report content
+        </Link>
 
         <div className="mt-4 flex flex-wrap gap-6 text-sm text-neutral-600">
           <span>

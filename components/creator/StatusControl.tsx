@@ -59,6 +59,12 @@ export function StatusControl({ strategyId, status }: Props) {
       {status === "PUBLISHED" ? (
         <span className="text-xs text-neutral-500">This strategy is public.</span>
       ) : null}
+      {status === "ARCHIVED" ? (
+        <p className="text-sm text-neutral-600">
+          This strategy is archived. An administrator must restore it to a private draft before it
+          can be published again.
+        </p>
+      ) : null}
     </div>
   );
 }

@@ -1,1 +1,22 @@
-"use client"; import {useState} from "react"; import {changeUserRole} from "../../actions"; export default function RoleForm({userId,role}:{userId:string;role:"LEARNER"|"CREATOR"|"ADMIN"}){const [value,setValue]=useState(role);const [message,setMessage]=useState("");return <form onSubmit={async e=>{e.preventDefault();const r=await changeUserRole(userId,value);setMessage(r.error||"Saved")}} className="flex items-center gap-2"><select value={value} onChange={e=>setValue(e.target.value as "LEARNER"|"CREATOR"|"ADMIN")} className="rounded border px-2 py-1 text-xs"><option>LEARNER</option><option>CREATOR</option><option>ADMIN</option></select><button className="rounded bg-neutral-900 px-2 py-1 text-xs text-white">Save</button>{message&&<span className="text-xs text-neutral-500">{message}</span>}</form>}
+"use client";
+import type { UserRole } from "@prisma/client";
+import { changeUserRole } from "@/app/(admin)/actions";
+import { AdminChangeForm } from "@/components/admin/AdminChangeForm";
+import { USER_ROLES } from "@/lib/services/moderation-rules";
+
+export default function RoleForm({ userId, role }: { userId: string; role: UserRole }) {
+  return (
+    <AdminChangeForm
+      key={role}
+      action={changeUserRole.bind(null, userId)}
+      label="Change role"
+      field="role"
+      options={USER_ROLES.filter((value) => value !== role).map((value) => ({
+        value,
+        label: value.toLowerCase(),
+      }))}
+      hidden={{ expectedRole: role }}
+      help="Review the access this role grants and record why it is needed."
+    />
+  );
+}

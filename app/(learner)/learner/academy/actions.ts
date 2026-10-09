@@ -4,11 +4,8 @@ import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth/session";
 import { academyRepository } from "@/lib/db";
 import { safeErrorMessage } from "@/lib/errors";
-import {
-  validateProgressInput,
-  nextCompletionState,
-  type CompletionAction,
-} from "@/lib/services/academy-rules";
+import { nextCompletionState, type CompletionAction } from "@/lib/services/academy-rules";
+import { academyLessonId } from "@/lib/services/academy-content";
 
 /**
  * Learner Academy actions.
@@ -44,12 +41,10 @@ export async function setLessonCompletion(
   try {
     const rawAction = formData.get("action")?.toString();
     const completed = nextCompletionState(rawAction as CompletionAction);
-    const lessonId = validateProgressInput({
-      lessonId: `${courseSlug}/${lessonSlug}`,
-      courseId: courseSlug,
-    }).lessonId;
+    const lessonId = academyLessonId(courseSlug, lessonSlug);
     await academyRepository.setLessonCompletion(userId, lessonId, completed);
     revalidatePath(`/learner/academy/${courseSlug}`);
+    revalidatePath("/learner/academy");
     revalidatePath(`/learner/academy/${courseSlug}/${lessonSlug}`);
     return { error: undefined };
   } catch (err) {

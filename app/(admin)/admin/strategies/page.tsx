@@ -13,9 +13,9 @@ export default async function Strategies({
   await requireRole("ADMIN");
   const p = await searchParams;
   const requested = p.status ?? "";
-  const status: StrategyStatus | undefined = (
-    STATUS_FILTERS as readonly string[]
-  ).includes(requested)
+  const status: StrategyStatus | undefined = (STATUS_FILTERS as readonly string[]).includes(
+    requested
+  )
     ? (requested as StrategyStatus)
     : undefined;
   const rows = await adminRepository.listStrategies(status);
@@ -33,11 +33,21 @@ export default async function Strategies({
         <table className="w-full text-left text-sm">
           <thead>
             <tr className="border-b">
-              <th className="p-4">Strategy</th>
-              <th className="p-4">Creator</th>
-              <th className="p-4">Status</th>
-              <th className="p-4">Updated</th>
-              <th className="p-4">Moderate</th>
+              <th scope="col" className="p-4">
+                Strategy
+              </th>
+              <th scope="col" className="p-4">
+                Creator
+              </th>
+              <th scope="col" className="p-4">
+                Status
+              </th>
+              <th scope="col" className="p-4">
+                Updated
+              </th>
+              <th scope="col" className="p-4">
+                Moderate
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -46,14 +56,12 @@ export default async function Strategies({
                 <td className="p-4">
                   {s.name}
                   <div className="text-xs text-neutral-500">
-                    {s.riskProfile || "Risk not set"} ·{" "}
-                    {s.timeHorizon || "Horizon not set"}
+                    {s.riskProfile || "Risk not set"} · {s.timeHorizon || "Horizon not set"}
                   </div>
                 </td>
                 <td className="p-4">
-                  {[s.creator.firstName, s.creator.lastName]
-                    .filter(Boolean)
-                    .join(" ") || s.creator.email}
+                  {[s.creator.firstName, s.creator.lastName].filter(Boolean).join(" ") ||
+                    s.creator.email}
                 </td>
                 <td className="p-4">{s.status}</td>
                 <td className="p-4">{s.updatedAt.toLocaleDateString()}</td>

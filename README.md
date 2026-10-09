@@ -173,9 +173,13 @@ MIRROR is built in phases. Current status:
 - ✅ **Phase 17B (Staging deployment & runtime verification):** Vercel staging deployment live and healthy; Clerk Google SSO, `/sign-in/sso-callback`, signed-out protected routing, authenticated redirect to `/learner/dashboard`, and learner runtime flows verified in Chrome against the Neon staging branch `phase-17b-testing` — no production-data writes
 - ✅ **Phase 18 (Core strategy lifecycle completion):** creator-published (PUBLISHED) strategies now appear on the public site — `/strategies` lists live creator strategies separately from clearly labeled sample models, and `/strategies/[id]` renders the creator's DB-backed thesis, methodology/decision rules, risk and exit conditions, target allocation, update & decision history, creator profile, and any model performance context. Learner following now links into those public detail pages, and follow/unfollow refreshes them. No schema or migration changes; demo sample content remains clearly labeled. Published strategies render through a dedicated DB-native public view rather than the sample blueprint shape; blueprint-style fields (category, tagline, region) are not stored in the database, so mapping would fabricate marketing metadata. This is intentional architecture, not a temporary workaround.
 - ✅ **Phase 19 (Public creator identity):** `/creators` is a public creator directory and `/creators/[id]` is a DB-native public creator profile — identity, verification state, about/approach, joined context, and PUBLISHED strategy history. Visibility rules are privacy-preserving (CREATOR role + profile + at least one published strategy; LEARNER/ADMIN never listed; unknown or non-creator identifiers 404). Strategy details link to the creator's public profile. No fabricated fields, no fake follower numbers, no performance ranking; draft strategies are never exposed.
+- ✅ **Phase 20 (Structured decision history):** `StrategyUpdate` now supports explicit UPDATE and DECISION records. Structured decisions require what changed, why, evidence, and risk implications, with optional assumption changes. Allocation changes derive the previous weight from authoritative DB state and persist immutable before/after snapshots in the same Prisma transaction as the decision. Public and creator timelines distinguish decisions from legacy updates, while existing follower notification infrastructure is reused. Existing historical updates remain UPDATE records; no missing historical evidence or allocation deltas are fabricated.
 
-Phase work is tracked in MIRROR_MASTER_PROMPT.md (Phases 0–17); product
-requirements are sourced from MIRROR_SPEC.md.
+- ✅ **Phase 21 (Academy architecture):** Runtime curriculum is PostgreSQL-backed with stable `courseSlug/lessonSlug` lesson IDs. Public `/academy` lists course metadata; existing learner URLs and private completion tracking remain. The atomic migration seeds 16 courses / 48 lessons, preserves existing edits and progress timestamps, reconciles old lesson IDs, and restores the indexed Progress FK. Unknown keys and identity/progress collisions stop the migration without deleting history. Authenticated browser checks remain deferred.
+- ✅ **Phase 22 (Paper portfolio maturity):** Allocation additions, edits, removals, and multi-strategy rebalances capture immutable strategy-name and before/after percentage snapshots in the same transaction as the weight change and simulated valuation. Rebalances require an explanation, reject stale forms, and retain the 100% cap. Target capital and reserve are shown separately from recorded paper holdings; missing prices remain unavailable. Old notes retain their text and timestamps without invented snapshots. Authenticated browser checks remain deferred.
+
+Phase work is tracked in MIRROR_MASTER_PROMPT.md; product requirements are
+sourced from MIRROR_SPEC.md.
 
 ## Product Vision
 
@@ -258,23 +262,60 @@ TBD
 
 ## Status
 
-**Phase 17B runtime verification complete (2026-09-08) — staging deployment is healthy on Vercel; production release remains a separate decision**
+**Phase 23 implementation — staging verified; draft review and preview in preparation**
 
-Clerk authentication is active (development keys), `/learner/*`, `/creator/*`,
-and `/admin/*` are protected by middleware plus server-side role checks, new
-users default to LEARNER, and CREATOR/ADMIN roles are assigned only by an
-authenticated ADMIN from `/admin/users`. MIRROR runs on a live Neon Postgres
-project: the initial migration and the Academy progress-FK migration are
-applied and the schema is up to date. GitHub Actions CI
-(`.github/workflows/ci.yml`) runs Prisma generate/validate, typecheck, lint,
-and the 163-test suite; it never applies migrations and never writes to any
-database. Automated checks pass, and the production build now runs `prisma generate` before `next build`. Interactive browser/runtime verification for Phase 17B is complete against the Vercel staging deployment (Clerk Google SSO, `/sign-in/sso-callback`, signed-out protected routing, authenticated redirect to `/learner/dashboard`, and learner flows verified in Chrome; Neon staging branch `phase-17b-testing`; no production-data writes). TESTING_CHECKLIST.md defines the smoke tests and the closeout record.
+Learners and creators can report published strategies/public creators and track
+their own submissions. Administrators review cases, moderate strategies, record
+creator verification decisions, and view audit history. Privileged changes
+recheck ADMIN inside their transaction, require a review reason/current state,
+and commit data and audit together. Archive restoration produces a private
+draft; stale creator forms cannot reverse an admin archive. The additive staging
+migration preserves the existing audit FK and legacy fields. Both rollback-only
+smoke modes passed with no fixtures retained. See PHASE_23_VERIFICATION.md.
+
+Paper portfolios now record allocation-change history and learner explanations.
+All allocation writes lock the owned parent portfolio and commit history and
+valuation atomically. Simulated rebalances detect stale forms and do not change
+recorded individual holdings or cash. Holdings show quantities, recorded prices,
+cost basis, value, and simulated gain/loss; unknown prices do not become zero or
+reuse stale cached values. The additive migration is applied to Neon staging;
+rollback-only checks verify legacy-data preservation and atomic failure handling.
+See PHASE_22_VERIFICATION.md for the observations and remaining review checks.
+
+Academy curriculum and progress now share stable database lesson identities.
+Migration smoke checks against Neon staging `phase-17b-testing` prove legacy-ID
+reconciliation, preservation of edits/completion timestamps, and full rollback
+for unresolved keys or duplicate/conflicting identities. The smoke generator
+(`node scripts/academy-migration-smoke.mjs preserve|orphan|duplicate|collision`)
+emits rollback-only SQL for an empty pre-migration staging/disposable Academy.
+
+GitLab CI runs Prisma generate/validate, typecheck, lint, unit tests, route checks,
+and a production build. It never applies migrations or writes a database.
+Production dependency audit is a release gate; the separate development report
+still tracks the unpatched upstream braces advisory (CVE-2026-93687). No dependency
+versions or production configuration change in Phase 21/22/23.
+
+Phase 17B's earlier authenticated learner verification is historical. Current
+Phase 20/21/22/23 authenticated creator/admin/learner browser checks remain deferred;
+signed-out routing, schema/data integrity, and automated tests are recorded
+separately. The Phase 21 preview is Ready: public `/academy` displays 16 courses,
+and Start learning / Investing Basics redirect signed-out visitors to sign-in
+with the correct learner destination. The desktop catalog was checked at 1363px;
+mobile, keyboard, screen-reader, and authenticated completion checks remain
+pending. See PHASE_21_VERIFICATION.md for the preview URL and deployed source.
+The Phase 22 preview is also Ready on source `d1b42a0`; CI passed with 250 tests.
+The public Academy catalog and signed-out portfolio destination were verified.
+See PHASE_22_VERIFICATION.md for the exact preview, CI, and migration evidence.
+New users still default to LEARNER, and CREATOR/ADMIN
+roles are assigned only by an authenticated ADMIN from `/admin/users`.
 
 ### Verification status
 
 - **Implemented** — code exists in this repository
 - **Statically verified** — typecheck and lint pass (no running app)
 - **DB-layer verified** — Prisma schema and migrations checked against the linked Neon database (no destructive operations)
-- **Automated-test verified** — unit tests pass (163 tests / 10 files)
+- **Automated-test verified** — unit tests pass (302 tests / 26 files)
 - **Browser/runtime verified** — Phase 17B: Vercel staging deployment served the app; Clerk Google SSO and `/sign-in/sso-callback`, signed-out protected routing, authenticated redirect to `/learner/dashboard`, and learner flows verified in Chrome against the Neon staging branch `phase-17b-testing`
+- **Public browser/runtime verified** — Phase 21: Ready preview renders the public 16-course Academy catalog; desktop layout and two signed-out learning redirects checked. Authenticated lesson/completion flows remain deferred.
+- **Public browser/runtime verified** — Phase 22: Ready preview renders 16 Academy course cards at 1363px without horizontal overflow; signed-out `/learner/portfolio` preserves its destination through sign-in. The new authenticated portfolio UI remains deferred.
 - **Not yet recorded** — TESTING_CHECKLIST rows for creator (C) and admin (D) flows, mobile widths (F), and keyboard/screen-reader (G) remain unmarked until observed
